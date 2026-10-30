@@ -1,0 +1,17 @@
+vaadin:
+  launch-browser: true
+  # Vaadin answers every unknown path with its 200 bootstrap page; let Spring 404 the actuator paths instead.
+  exclude-urls: /actuator/**
+  # Vaadin adds X-Frame-Options: SAMEORIGIN by default; an empty value turns it off so same-site dashboards can embed tools.
+  frameOptions: ""
+spring:
+  application:
+    name: DevCore
+server:
+  # Honour X-Forwarded-* from a reverse proxy, including X-Forwarded-Prefix for path-stripping setups.
+  forward-headers-strategy: framework
+management:
+  endpoints:
+    web:
+      discovery:
+        enabled: false
