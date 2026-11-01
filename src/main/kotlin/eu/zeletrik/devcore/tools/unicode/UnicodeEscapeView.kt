@@ -3,7 +3,7 @@ package eu.zeletrik.devcore.tools.unicode
 import com.vaadin.flow.component.checkbox.Checkbox
 import com.vaadin.flow.component.orderedlayout.FlexComponent
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout
-import com.vaadin.flow.component.select.Select
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup
 import com.vaadin.flow.component.textfield.TextArea
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
@@ -20,10 +20,8 @@ import eu.zeletrik.devcore.shell.textArea
 @SpringComponent
 @UIScope
 class UnicodeEscapeView : TextToolView<TextArea>(Tool.UNICODE_ESCAPE, textArea("Input")) {
-	internal val mode = modeGroup().apply { addValueChangeListener { showOptions(); recompute() } }
-	internal val format = Select<EscapeFormat>().apply {
-		label = "Format"
-		setItems(*EscapeFormat.entries.toTypedArray())
+	internal val mode = modeGroup("Escape", "Unescape").apply { addValueChangeListener { showOptions(); recompute() } }
+	internal val format = RadioButtonGroup("Format", *EscapeFormat.entries.toTypedArray()).apply {
 		setItemLabelGenerator { it.label }
 		value = EscapeFormat.UTF16
 		addValueChangeListener { showOptions(); recompute() }

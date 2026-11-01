@@ -14,11 +14,15 @@ object MorseCode {
 		'-' to "-....-", '_' to "..--.-", '"' to ".-..-.", '$' to "...-..-", '@' to ".--.-.",
 	)
 	private val letters = codes.entries.associate { (char, code) -> code to char }
+	/** Any Unicode space separates, the no-break space included (`\\s` alone is ASCII-only). */
+	private val separators = Regex("[\\s\\p{Z}]+")
 
-	fun encode(text: String): String = text.trim().split(Regex("\\s+")).joinToString(" / ") { word ->
-		word.map { char ->
-			codes[char.uppercaseChar()] ?: throw IllegalArgumentException("No Morse code for '$char'")
-		}.joinToString(" ")
+	fun encode(text: String): String =
+		text.trim().split(separators).filter { it.isNotEmpty() }.joinToString(" / ") { word ->
+		word.codePoints().toArray().joinToString(" ") { cp ->
+			val char = String(Character.toChars(cp))
+			char.singleOrNull()?.let { codes[it.uppercaseChar()] } ?: throw IllegalArgumentException("No Morse code for '$char'")
+		}
 	}
 
 	fun decode(text: String): String {
@@ -26,7 +30,7 @@ object MorseCode {
 			"Morse code may contain only '.', '-', '/' and spaces"
 		}
 		return text.split('/').map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" ") { word ->
-			word.split(Regex("\\s+")).joinToString("") { code ->
+			word.split(separators).filter { it.isNotEmpty() }.joinToString("") { code ->
 				letters[code]?.toString() ?: throw IllegalArgumentException("Unknown Morse code '$code'")
 			}
 		}

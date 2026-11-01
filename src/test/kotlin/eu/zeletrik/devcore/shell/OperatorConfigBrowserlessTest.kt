@@ -18,7 +18,7 @@ class OperatorConfigBrowserlessTest : SpringBrowserlessTest() {
 	fun `a hidden tool is missing from the sidebar and Home`() {
 		navigate(HomeView::class.java)
 		assertTrue(navTree().none { it.endsWith(Tool.BASE64.title) })
-		val hrefs = `$`(RouterLink::class.java).all().map { it.href }
+		val hrefs = `$view`(RouterLink::class.java).all().map { it.href }
 		assertFalse("base64" in hrefs)
 	}
 

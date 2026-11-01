@@ -17,7 +17,7 @@ import eu.zeletrik.devcore.shell.zonePicker
 import java.time.Instant
 import java.time.ZoneId
 
-@Route("timestamp", layout = MainLayout::class)
+@Route("timestamp-converter", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class TimestampView : TextToolView<TextArea>(Tool.TIMESTAMP, textArea("Timestamp or date")) {
@@ -30,7 +30,11 @@ class TimestampView : TextToolView<TextArea>(Tool.TIMESTAMP, textArea("Timestamp
 	internal val relative = OutputField("Relative")
 	internal val rfc1123 = OutputField("RFC 1123 (GMT)")
 	internal val sql = OutputField("SQL date-time (selected zone)")
-	internal val format = field(textLine("Custom format").apply { helperText = "java.time pattern, e.g. dd.MM.yyyy HH:mm" }, "format", optional = true)
+	internal val format = field(
+		textLine("Custom format").apply { helperText = "java.time pattern, e.g. dd.MM.yyyy HH:mm" },
+		"format",
+		optional = true,
+	)
 	internal val custom = OutputField("Custom")
 
 	init {
@@ -49,8 +53,10 @@ class TimestampView : TextToolView<TextArea>(Tool.TIMESTAMP, textArea("Timestamp
 		relative.value = converted.relative
 		rfc1123.value = converted.rfc1123
 		sql.value = converted.sql
-		custom.value = if (format.value.isBlank()) "" else optional(format) { Timestamps.custom(instant, zoneId, format.value) } ?: ""
+		custom.value =
+			if (format.value.isBlank()) "" else optional(format) { Timestamps.custom(instant, zoneId, format.value) } ?: ""
 	}
 
-	override fun clearOutputs() = listOf(seconds, millis, utc, zoned, relative, rfc1123, sql, custom).forEach { it.clear() }
+	override fun clearOutputs() =
+		listOf(seconds, millis, utc, zoned, relative, rfc1123, sql, custom).forEach { it.clear() }
 }

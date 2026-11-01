@@ -12,7 +12,8 @@ class JwtDecoderTest {
 	private fun b64(json: String) = Base64.getUrlEncoder().withoutPadding().encodeToString(json.toByteArray())
 	private fun token(payload: String, signature: String = "c2ln") = "${b64(header)}.${b64(payload)}.$signature"
 	private fun status(payload: String, now: Long) = JwtDecoder.decode(token(payload), Instant.ofEpochSecond(now)).status
-	private fun error(text: String) = assertFailsWith<IllegalArgumentException> { JwtDecoder.decode(text, Instant.EPOCH) }.message!!
+	private fun error(text: String) =
+		assertFailsWith<IllegalArgumentException> { JwtDecoder.decode(text, Instant.EPOCH) }.message!!
 
 	@Test
 	fun `header and payload are pretty JSON, signature is kept as given`() {
@@ -30,7 +31,10 @@ class JwtDecoderTest {
 
 	@Test
 	fun `time claims become ISO-8601 with relative time`() {
-		val jwt = JwtDecoder.decode(token("""{"exp":1700000000,"iat":1700000000.5}"""), Instant.ofEpochSecond(1700000000 - 3 * 86400))
+		val jwt = JwtDecoder.decode(
+			token("""{"exp":1700000000,"iat":1700000000.5}"""),
+			Instant.ofEpochSecond(1700000000 - 3 * 86400),
+		)
 		assertEquals("exp: 2023-11-14T22:13:20Z (in 3 days)\niat: 2023-11-14T22:13:20.500Z (in 3 days)", jwt.times)
 	}
 
@@ -50,16 +54,16 @@ class JwtDecoderTest {
 	}
 
 	@Test
-	fun `non-numeric time claims are left alone`() {
+	fun `non-numeric time claims are reported as not readable`() {
 		val jwt = JwtDecoder.decode(token("""{"exp":"tomorrow"}"""), Instant.EPOCH)
-		assertEquals("No expiry", jwt.status)
-		assertEquals("", jwt.times)
+		assertEquals("Expiry not readable", jwt.status)
+		assertEquals("exp: not readable", jwt.times)
 		assertTrue(jwt.payload.contains("\"tomorrow\""))
 	}
 
 	@Test
 	fun `part count errors`() {
-		assertEquals("Encrypted JWTs (JWE) are not supported", error("a.b.c.d.e"))
+		assertEquals("Encrypted JWTs (JWE) aren't supported", error("a.b.c.d.e"))
 		listOf("a", "a.b", "a.b.c.d", "a.b.c.d.e.f").forEach {
 			assertEquals("Not a JWT: expected 3 dot-separated parts", error(it))
 		}

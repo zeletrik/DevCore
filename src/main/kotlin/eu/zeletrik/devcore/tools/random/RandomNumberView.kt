@@ -16,7 +16,7 @@ import eu.zeletrik.devcore.shell.numberField
 import eu.zeletrik.devcore.shell.textLine
 import eu.zeletrik.devcore.tools.FieldError
 
-@Route("random-number", layout = MainLayout::class)
+@Route("random-number-generator", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class RandomNumberView : GeneratorView(Tool.RANDOM_NUMBER) {
@@ -28,15 +28,19 @@ class RandomNumberView : GeneratorView(Tool.RANDOM_NUMBER) {
 
 	init {
 		add(
-			HorizontalLayout(min, max, count, unique, generateButton).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true },
+			HorizontalLayout(min, max, count, unique, generateButton, generateError).apply {
+				defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
+				isWrap = true
+			},
 			output,
 		)
 	}
 
 	override fun produce() {
-		val from = boundedLong(min) ?: return
-		val to = boundedLong(max) ?: return
-		val n = boundedInt(count, 1..1000) ?: return
+		val from = boundedLong(min)
+		val to = boundedLong(max)
+		val n = boundedInt(count, 1..1000)
+		if (from == null || to == null || n == null) return
 		try {
 			output.value = RandomNumbers.generate(from, to, n, unique.value).joinToString("\n")
 		} catch (e: FieldError) {

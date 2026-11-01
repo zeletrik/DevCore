@@ -23,11 +23,11 @@ class JsonFormatterView : TextToolView<TextArea>(Tool.JSON, textArea("JSON")) {
 		addValueChangeListener { recompute() }
 	}
 	internal val expand = Checkbox("Expand embedded JSON").apply {
-		helperText = "Shows JSON stored in strings as JSON, such as an SNS message inside an SQS body. The result is for reading: " +
-			"those strings are now objects."
+		helperText = "Shows JSON stored in strings as JSON, such as an SNS message inside an SQS body. " +
+			"The result is for reading: those strings are now objects."
 		addValueChangeListener { recompute() }
 	}
-	internal val output = OutputField("Formatted JSON")
+	internal val output = OutputField("Formatted")
 
 	init {
 		add(indent, expand, input, output)

@@ -5,7 +5,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class MorseCodeTest {
-	private fun fails(message: String, block: () -> Unit) = assertEquals(message, assertFailsWith<IllegalArgumentException>(block = block).message)
+	private fun fails(message: String, block: () -> Unit) =
+		assertEquals(message, assertFailsWith<IllegalArgumentException>(block = block).message)
 
 	@Test
 	fun encode() {

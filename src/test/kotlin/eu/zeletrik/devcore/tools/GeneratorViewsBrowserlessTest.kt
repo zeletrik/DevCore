@@ -26,7 +26,7 @@ class GeneratorViewsBrowserlessTest : SpringBrowserlessTest() {
 		test(view.input).setValue("hello")
 		assertNotNull(view.code.current)
 		assertTrue(view.code.png.isEnabled && view.code.svg.isEnabled && view.code.image.isVisible)
-		test(view.wifiMode).selectItem("WiFi network")
+		test(view.wifiMode).selectItem("Wi-Fi network")
 		assertFalse(view.input.isVisible)
 		assertNull(view.code.current)
 		test(view.ssid).setValue("home")

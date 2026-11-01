@@ -19,21 +19,21 @@ import eu.zeletrik.devcore.shell.textArea
 @UIScope
 class StringEscapeView : TextToolView<TextArea>(Tool.STRING_ESCAPE, textArea("Input")) {
 	internal val mode = modeGroup("Escape", "Unescape").apply { addValueChangeListener { recompute() } }
-	internal val flavour = RadioButtonGroup("Flavour", *Flavour.entries.toTypedArray()).apply {
+	internal val flavor = RadioButtonGroup("Flavor", *Flavor.entries.toTypedArray()).apply {
 		setItemLabelGenerator { it.label }
-		value = Flavour.JSON
+		value = Flavor.JSON
 		addValueChangeListener { recompute() }
 	}
 	internal val output = OutputField("Output")
 
 	init {
-		add(HorizontalLayout(mode, flavour), input, output)
+		add(HorizontalLayout(mode, flavor), input, output)
 	}
 
 	override fun render(text: String) {
 		output.value = when (mode.value) {
-			Mode.DECODE -> StringEscapes.unescape(text, flavour.value)
-			else -> StringEscapes.escape(text, flavour.value)
+			Mode.DECODE -> StringEscapes.unescape(text, flavor.value)
+			else -> StringEscapes.escape(text, flavor.value)
 		}
 	}
 

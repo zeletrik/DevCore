@@ -3,7 +3,7 @@ package eu.zeletrik.devcore.tools.numberbase
 import com.vaadin.flow.component.checkbox.Checkbox
 import com.vaadin.flow.component.orderedlayout.FlexComponent
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout
-import com.vaadin.flow.component.radiobutton.RadioButtonGroup
+import com.vaadin.flow.component.select.Select
 import com.vaadin.flow.component.textfield.TextField
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
@@ -14,23 +14,32 @@ import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textLine
 
-@Route("number-base", layout = MainLayout::class)
+@Route("number-base-converter", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class NumberBaseView : TextToolView<TextField>(Tool.NUMBER_BASE, textLine("Number")) {
-	internal val base = RadioButtonGroup("Input base", *InputBase.entries.toTypedArray()).apply {
+	internal val base = Select<InputBase>().apply {
+		label = "Input base"
+		setItems(*InputBase.entries.toTypedArray())
 		setItemLabelGenerator { it.label }
 		value = InputBase.AUTO
 		addValueChangeListener { recompute() }
 	}
-	internal val uppercase = Checkbox("Uppercase hex").apply { addValueChangeListener { recompute() } }
+	internal val uppercase = Checkbox("Uppercase").apply { addValueChangeListener { recompute() } }
 	internal val binary = OutputField("Binary")
 	internal val octal = OutputField("Octal")
 	internal val decimal = OutputField("Decimal")
 	internal val hex = OutputField("Hexadecimal")
 
 	init {
-		add(HorizontalLayout(base, uppercase).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE }, input, binary, octal, decimal, hex)
+		add(
+			HorizontalLayout(base, uppercase).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE },
+			input,
+			binary,
+			octal,
+			decimal,
+			hex,
+		)
 	}
 
 	override fun render(text: String) {

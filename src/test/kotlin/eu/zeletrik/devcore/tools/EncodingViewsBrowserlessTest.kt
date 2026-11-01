@@ -39,7 +39,7 @@ class EncodingViewsBrowserlessTest : SpringBrowserlessTest() {
 		val view = navigate("string-escape?mode=decode&input=it%5C%27s", StringEscapeView::class.java)
 		assertTrue(view.input.isInvalid)
 		assertEquals("Invalid escape sequence at position 3", view.input.errorMessage)
-		test(view.flavour).selectItem("JavaScript")
+		test(view.flavor).selectItem("JavaScript")
 		assertEquals("it's", view.output.value)
 		assertEquals("Unescape", view.mode.itemLabelGenerator.apply(view.mode.value))
 	}

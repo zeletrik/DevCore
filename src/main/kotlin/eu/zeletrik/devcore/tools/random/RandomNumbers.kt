@@ -9,7 +9,9 @@ object RandomNumbers {
 	fun generate(min: Long, max: Long, count: Int, unique: Boolean): List<Long> {
 		if (max < min) throw FieldError("max", "Must be at least the minimum")
 		val size = BigInteger.valueOf(max) - BigInteger.valueOf(min) + BigInteger.ONE
-		if (unique && size < BigInteger.valueOf(count.toLong())) throw FieldError("count", "Only $size unique numbers in this range")
+		if (unique && size < BigInteger.valueOf(count.toLong())) {
+			throw FieldError("count", "Only $size unique numbers in this range")
+		}
 		if (!unique) return List(count) { draw(min, max) }
 		val drawn = LinkedHashSet<Long>()
 		while (drawn.size < count) drawn += draw(min, max)

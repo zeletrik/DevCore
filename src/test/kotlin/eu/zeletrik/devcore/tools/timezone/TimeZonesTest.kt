@@ -15,21 +15,35 @@ class TimeZonesTest {
 	@Test
 	fun `one line per zone, source first, in selection order`() {
 		assertEquals(
-			"Europe/Budapest  2026-10-29 14:30  +01:00\nAsia/Tokyo  2026-10-29 22:30  +09:00\nAsia/Kolkata  2026-10-29 19:00  +05:30",
+			"Europe/Budapest  2026-10-29 14:30  +01:00\n" +
+				"Asia/Tokyo  2026-10-29 22:30  +09:00\n" +
+				"Asia/Kolkata  2026-10-29 19:00  +05:30",
 			convert("2026-10-29 14:30", "Europe/Budapest", "Asia/Tokyo", "Asia/Kolkata"),
 		)
-		assertEquals("UTC  2026-10-29 14:30  +00:00\nAmerica/New_York  2026-10-29 10:30  -04:00", convert("2026-10-29 14:30", "UTC", "America/New_York"))
+		assertEquals(
+			"UTC  2026-10-29 14:30  +00:00\nAmerica/New_York  2026-10-29 10:30  -04:00",
+			convert("2026-10-29 14:30", "UTC", "America/New_York"),
+		)
 	}
 
 	@Test
 	fun `day markers`() {
-		assertEquals("Asia/Tokyo  2026-10-30 07:30  +09:00 (+1 day)", convert("2026-10-29 23:30", "Europe/Budapest", "Asia/Tokyo").lines()[1])
-		assertEquals("Europe/Budapest  2026-10-28 21:00  +01:00 (${minus}1 day)", convert("2026-10-29 05:00", "Asia/Tokyo", "Europe/Budapest").lines()[1])
+		assertEquals(
+			"Asia/Tokyo  2026-10-30 07:30  +09:00 (+1 day)",
+			convert("2026-10-29 23:30", "Europe/Budapest", "Asia/Tokyo").lines()[1],
+		)
+		assertEquals(
+			"Europe/Budapest  2026-10-28 21:00  +01:00 (${minus}1 day)",
+			convert("2026-10-29 05:00", "Asia/Tokyo", "Europe/Budapest").lines()[1],
+		)
 	}
 
 	@Test
 	fun `T separator and seconds`() {
-		assertEquals("Europe/Budapest  2026-10-29 14:30:15  +01:00", convert("2026-10-29T14:30:15", "Europe/Budapest").lines()[0])
+		assertEquals(
+			"Europe/Budapest  2026-10-29 14:30:15  +01:00",
+			convert("2026-10-29T14:30:15", "Europe/Budapest").lines()[0],
+		)
 	}
 
 	@Test

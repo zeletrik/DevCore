@@ -4,6 +4,7 @@ import com.vaadin.flow.component.textfield.TextArea
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
 import com.vaadin.flow.spring.annotation.UIScope
+import eu.zeletrik.devcore.shell.DeepWork
 import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
@@ -22,7 +23,8 @@ class CertificateView : TextToolView<TextArea>(Tool.CERTIFICATE, textArea("PEM c
 	}
 
 	override fun render(text: String) {
-		output.value = Certificates.decode(text, Instant.now())
+		val now = Instant.now()
+		output.value = DeepWork.run { Certificates.decode(text, now) }
 	}
 
 	override fun clearOutputs() = output.clear()

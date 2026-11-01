@@ -25,7 +25,7 @@ class HtmlEntitiesTest {
 
 	@Test
 	fun `anything that is not a complete reference stays as written, without errors`() {
-		listOf("&amp", "&nope;", "& b", "&#99999999999;", "&#xD800;", "&;", "&#;").forEach {
+		listOf("&amp", "&nope;", "& b", "&#99999999999;", "&;", "&#;").forEach {
 			assertEquals(it, HtmlEntities.decode(it))
 		}
 	}

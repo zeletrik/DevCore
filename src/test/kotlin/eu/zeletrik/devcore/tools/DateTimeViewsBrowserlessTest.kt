@@ -1,7 +1,7 @@
 package eu.zeletrik.devcore.tools
 
 import com.vaadin.browserless.SpringBrowserlessTest
-import eu.zeletrik.devcore.tools.cron.CronFlavour
+import eu.zeletrik.devcore.tools.cron.CronFlavor
 import eu.zeletrik.devcore.tools.cron.CronView
 import eu.zeletrik.devcore.tools.timestamp.TimestampView
 import eu.zeletrik.devcore.tools.timezone.TimeZoneView
@@ -17,7 +17,7 @@ class DateTimeViewsBrowserlessTest : SpringBrowserlessTest() {
 	@Test
 	fun `cron explainer defaults to Unix and UTC, and recomputes runs on a zone change`() {
 		val view = navigate("cron-explainer?input=0%209%20*%20*%201-5", CronView::class.java)
-		assertEquals(CronFlavour.UNIX, view.flavour.value)
+		assertEquals(CronFlavor.UNIX, view.flavor.value)
 		assertEquals("UTC", view.zone.value)
 		assertEquals("At 09:00, Monday through Friday", view.description.value)
 		val utcRuns = view.runs.value
@@ -42,7 +42,7 @@ class DateTimeViewsBrowserlessTest : SpringBrowserlessTest() {
 
 	@Test
 	fun `timestamp - a broken custom format marks only that field and keeps the other outputs`() {
-		val view = navigate("timestamp?input=1700000000", TimestampView::class.java)
+		val view = navigate("timestamp-converter?input=1700000000", TimestampView::class.java)
 		test(view.format).setValue("HH:mm {")
 		assertTrue(view.format.isInvalid)
 		assertEquals("", view.custom.value)

@@ -5,7 +5,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class SubnetsTest {
-	private fun fields(input: String) = Subnets.describe(input).lines().associate { it.substringBefore(": ") to it.substringAfter(": ") }
+	private fun fields(input: String) =
+		Subnets.describe(input).lines().associate { it.substringBefore(": ") to it.substringAfter(": ") }
 
 	private fun error(input: String) = assertFailsWith<IllegalArgumentException> { Subnets.describe(input) }.message
 
@@ -26,7 +27,10 @@ class SubnetsTest {
 	fun `IPv4 types`() {
 		mapOf(
 			"10.0.0.1" to "Private", "8.8.8.8" to "Public", "127.0.0.1" to "Loopback", "169.254.1.1" to "Link-local",
-			"224.0.0.1" to "Multicast", "100.64.0.1" to "Shared address space", "240.0.0.1" to "Reserved", "0.0.0.0" to "Unspecified",
+			"224.0.0.1" to "Multicast",
+			"100.64.0.1" to "Shared address space",
+			"240.0.0.1" to "Reserved",
+			"0.0.0.0" to "Unspecified",
 		).forEach { (address, type) -> assertEquals(type, fields(address)["Type"], address) }
 	}
 
@@ -62,7 +66,10 @@ class SubnetsTest {
 	@Test
 	fun `prefix bounds`() {
 		assertEquals("10.1.2.0/24", fields("10.1.2.3/24")["Network"])
-		assertEquals(listOf("0.0.0.0/0", "4294967296"), fields("10.1.2.3/0").let { listOf(it["Network"], it["Total addresses"]) })
+		assertEquals(
+			listOf("0.0.0.0/0", "4294967296"),
+			fields("10.1.2.3/0").let { listOf(it["Network"], it["Total addresses"]) },
+		)
 		assertEquals(listOf("10.1.2.3/32", "1"), fields("10.1.2.3/32").let { listOf(it["Network"], it["Total addresses"]) })
 		assertEquals("Prefix must be 0–32", error("10.1.2.3/33"))
 		assertEquals("2001:db8::/48", fields("2001:db8::1/48")["Network"])
@@ -74,6 +81,8 @@ class SubnetsTest {
 	@Test
 	fun `bad masks and host names are rejected, never resolved`() {
 		assertEquals("Netmask must be contiguous", error("192.168.1.0 255.0.255.0"))
-		listOf("example.com/24", "localhost", "fe80::1%eth0", "300.1.1.1").forEach { assertEquals("Not an IPv4 or IPv6 address", error(it), it) }
+		listOf("example.com/24", "localhost", "fe80::1%eth0", "300.1.1.1").forEach {
+			assertEquals("Not an IPv4 or IPv6 address", error(it), it)
+		}
 	}
 }

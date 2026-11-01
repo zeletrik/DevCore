@@ -1,19 +1,48 @@
 package eu.zeletrik.devcore.tools.color
 
+import java.math.RoundingMode
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** An sRGB colour with 0–255 channels and alpha 0–1. */
+private const val CHANNEL_MAX = 255.0
+private const val PERCENT = 100.0
+private const val FULL_TURN = 360.0
+
+/** The hue circle's six sectors (red, yellow, green, cyan, blue, magenta), 60° each. */
+private const val SECTORS = 6
+private const val SECTOR_DEGREES = FULL_TURN / SECTORS
+
+/** Green is the largest channel in sectors 1–2 and blue in 3–4, so their hues start two and four sectors round. */
+private const val GREEN_SECTOR = 2.0
+private const val BLUE_SECTOR = 4.0
+
+/** `rgb`, `hsl` and `hsv` take three values; `rgb` and `hsl` may add alpha as a fourth. `cmyk` takes four. */
+private const val COMPONENTS = 3
+private const val INKS = 4
+
+/** `#rgb` and `#rgba`: one hex digit per channel. */
+private const val SHORT_HEX_DIGITS = 4
+private const val HEX = 16
+private const val ALPHA_DECIMALS = 3
+
+/** An sRGB color with 0–255 channels and alpha 0–1. */
 data class Rgba(val r: Int, val g: Int, val b: Int, val a: Double = 1.0)
 
-data class ColorNotations(val hex: String, val rgb: String, val hsl: String, val hsv: String, val cmyk: String, val name: String)
+data class ColorNotations(
+	val hex: String,
+	val rgb: String,
+	val hsl: String,
+	val hsv: String,
+	val cmyk: String,
+	val name: String,
+)
 
 object Colors {
-	const val UNRECOGNISED = "Not a recognised colour"
+	const val INVALID = "Invalid color"
 
-	/** The 148 CSS named colours. */
+	/** The 148 CSS named colors. */
 	private val named = mapOf(
 		"aliceblue" to "#f0f8ff", "antiquewhite" to "#faebd7", "aqua" to "#00ffff", "aquamarine" to "#7fffd4",
 		"azure" to "#f0ffff", "beige" to "#f5f5dc", "bisque" to "#ffe4c4", "black" to "#000000",
@@ -34,11 +63,17 @@ object Colors {
 		"lavenderblush" to "#fff0f5", "lawngreen" to "#7cfc00", "lemonchiffon" to "#fffacd", "lightblue" to "#add8e6",
 		"lightcoral" to "#f08080", "lightcyan" to "#e0ffff", "lightgoldenrodyellow" to "#fafad2", "lightgray" to "#d3d3d3",
 		"lightgreen" to "#90ee90", "lightgrey" to "#d3d3d3", "lightpink" to "#ffb6c1", "lightsalmon" to "#ffa07a",
-		"lightseagreen" to "#20b2aa", "lightskyblue" to "#87cefa", "lightslategray" to "#778899", "lightslategrey" to "#778899",
+		"lightseagreen" to "#20b2aa",
+		"lightskyblue" to "#87cefa",
+		"lightslategray" to "#778899",
+		"lightslategrey" to "#778899",
 		"lightsteelblue" to "#b0c4de", "lightyellow" to "#ffffe0", "lime" to "#00ff00", "limegreen" to "#32cd32",
 		"linen" to "#faf0e6", "magenta" to "#ff00ff", "maroon" to "#800000", "mediumaquamarine" to "#66cdaa",
 		"mediumblue" to "#0000cd", "mediumorchid" to "#ba55d3", "mediumpurple" to "#9370db", "mediumseagreen" to "#3cb371",
-		"mediumslateblue" to "#7b68ee", "mediumspringgreen" to "#00fa9a", "mediumturquoise" to "#48d1cc", "mediumvioletred" to "#c71585",
+		"mediumslateblue" to "#7b68ee",
+		"mediumspringgreen" to "#00fa9a",
+		"mediumturquoise" to "#48d1cc",
+		"mediumvioletred" to "#c71585",
 		"midnightblue" to "#191970", "mintcream" to "#f5fffa", "mistyrose" to "#ffe4e1", "moccasin" to "#ffe4b5",
 		"navajowhite" to "#ffdead", "navy" to "#000080", "oldlace" to "#fdf5e6", "olive" to "#808000",
 		"olivedrab" to "#6b8e23", "orange" to "#ffa500", "orangered" to "#ff4500", "orchid" to "#da70d6",
@@ -53,136 +88,163 @@ object Colors {
 		"tomato" to "#ff6347", "turquoise" to "#40e0d0", "violet" to "#ee82ee", "wheat" to "#f5deb3",
 		"white" to "#ffffff", "whitesmoke" to "#f5f5f5", "yellow" to "#ffff00", "yellowgreen" to "#9acd32",
 	)
-	private val hexForm = Regex("#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})")
+	private val hexForm = Regex("#?([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})")
 	private val function = Regex("(rgba?|hsla?|hsv|cmyk)\\((.*)\\)", RegexOption.IGNORE_CASE)
 
 	fun parse(text: String): Rgba {
 		val value = text.trim()
-		named[value.lowercase()]?.let { return parse(it) }
-		hexForm.matchEntire(value)?.let { match ->
-			val digits = match.groupValues[1].let { if (it.length <= 4) it.map { c -> "$c$c" }.joinToString("") else it }
-			val channels = digits.chunked(2).map { it.toInt(16) }
-			return Rgba(channels[0], channels[1], channels[2], if (channels.size == 4) channels[3] / 255.0 else 1.0)
-		}
-		val match = function.matchEntire(value) ?: throw IllegalArgumentException(UNRECOGNISED)
+		val hex = hexForm.matchEntire(named[value.lowercase()] ?: value)
+		return if (hex != null) fromHex(hex.groupValues[1]) else fromFunction(value)
+	}
+
+	private fun fromHex(written: String): Rgba {
+		val digits = if (written.length <= SHORT_HEX_DIGITS) written.map { c -> "$c$c" }.joinToString("") else written
+		val channels = digits.chunked(2).map { it.toInt(HEX) }
+		val alpha = channels.getOrNull(COMPONENTS)?.let { it / CHANNEL_MAX } ?: 1.0
+		return Rgba(channels[0], channels[1], channels[2], alpha)
+	}
+
+	private fun fromFunction(value: String): Rgba {
+		val match = function.matchEntire(value) ?: throw IllegalArgumentException(INVALID)
 		val name = match.groupValues[1].lowercase()
 		val parts = match.groupValues[2].split(Regex("\\s*[,/]\\s*|\\s+")).filter { it.isNotBlank() }
-		val alpha = if (parts.size == 4 && name in setOf("rgb", "rgba", "hsl", "hsla")) alpha(parts[3]) else 1.0
-		return when (name) {
-			"rgb", "rgba" -> {
-				require(parts.size in 3..4) { UNRECOGNISED }
-				Rgba(channel(parts[0]), channel(parts[1]), channel(parts[2]), alpha)
-			}
-			"hsl", "hsla" -> {
-				require(parts.size in 3..4) { UNRECOGNISED }
-				fromHsl(hue(parts[0]), percent(parts[1]), percent(parts[2]), alpha)
-			}
-			"hsv" -> {
-				require(parts.size == 3) { UNRECOGNISED }
-				fromHsv(hue(parts[0]), percent(parts[1]), percent(parts[2]))
-			}
-			else -> {
-				require(parts.size == 4) { UNRECOGNISED }
-				val (c, m, y, k) = parts.map(::percent)
-				Rgba(((1 - c) * (1 - k) * 255).roundToInt(), ((1 - m) * (1 - k) * 255).roundToInt(), ((1 - y) * (1 - k) * 255).roundToInt())
+		val takesAlpha = name in setOf("rgb", "rgba", "hsl", "hsla")
+		val alpha = if (parts.size == COMPONENTS + 1 && takesAlpha) Components.alpha(parts.last()) else 1.0
+		return with(Components) {
+			when (name) {
+				"rgb", "rgba" -> {
+					require(parts.size in COMPONENTS..COMPONENTS + 1) { INVALID }
+					Rgba(channel(parts[0]), channel(parts[1]), channel(parts[2]), alpha)
+				}
+				"hsl", "hsla" -> {
+					require(parts.size in COMPONENTS..COMPONENTS + 1) { INVALID }
+					ColorSpaces.fromHsl(hue(parts[0]), percent(parts[1]), percent(parts[2]), alpha)
+				}
+				"hsv" -> {
+					require(parts.size == COMPONENTS) { INVALID }
+					ColorSpaces.fromHsv(hue(parts[0]), percent(parts[1]), percent(parts[2]))
+				}
+				else -> {
+					require(parts.size == INKS) { INVALID }
+					val inks = parts.map(::percent)
+					val k = inks.last()
+					val (r, g, b) = inks.take(COMPONENTS).map { ((1 - it) * (1 - k) * CHANNEL_MAX).roundToInt() }
+					Rgba(r, g, b)
+				}
 			}
 		}
 	}
 
 	fun notations(color: Rgba): ColorNotations {
-		val (r, g, b, a) = color
+		val (r, g, b) = color
+		val a = color.a
 		val opaque = a >= 1.0
-		val hex = "#%02x%02x%02x".format(r, g, b) + if (opaque) "" else "%02x".format((a * 255).roundToInt())
-		val (h, s, l) = toHsl(color)
-		val (hv, sv, v) = toHsv(color)
-		val k = 1 - max(r, max(g, b)) / 255.0
-		fun ink(channel: Int) = if (k >= 1.0) 0 else ((1 - channel / 255.0 - k) / (1 - k) * 100).roundToInt()
+		val hex = cssHex(color) + if (opaque) "" else "%02x".format((a * CHANNEL_MAX).roundToInt())
+		val (h, s, l) = ColorSpaces.toHsl(color)
+		val (hv, sv, v) = ColorSpaces.toHsv(color)
+		val k = 1 - max(r, max(g, b)) / CHANNEL_MAX
+		fun ink(channel: Int) = if (k >= 1.0) 0 else ((1 - channel / CHANNEL_MAX - k) / (1 - k) * PERCENT).roundToInt()
 		return ColorNotations(
 			hex = hex,
 			rgb = if (opaque) "rgb($r, $g, $b)" else "rgba($r, $g, $b, ${trim(a)})",
 			hsl = "hsl($h, $s%, $l%)",
 			hsv = "hsv($hv, $sv%, $v%)",
-			cmyk = "cmyk(${ink(r)}%, ${ink(g)}%, ${ink(b)}%, ${(k * 100).roundToInt()}%)",
+			cmyk = "cmyk(${ink(r)}%, ${ink(g)}%, ${ink(b)}%, ${(k * PERCENT).roundToInt()}%)",
 			name = if (opaque) named.entries.firstOrNull { it.value == hex }?.key.orEmpty() else "",
 		)
 	}
 
-	/** `#rrggbb` for the swatch and the picker, built from the parsed colour, never from raw input. */
+	/** `#rrggbb` for the swatch and the picker, built from the parsed color, never from raw input. */
 	fun cssHex(color: Rgba) = "#%02x%02x%02x".format(color.r, color.g, color.b)
 
-	private fun channel(part: String): Int {
-		val value = if (part.endsWith("%")) percent(part) * 255 else part.toDoubleOrNull() ?: throw IllegalArgumentException(UNRECOGNISED)
-		require(value in 0.0..255.0) { UNRECOGNISED }
+	/** Alpha with at most 3 decimals (`0.502`), without trailing zeros. */
+	private fun trim(value: Double) =
+		value.toBigDecimal().setScale(ALPHA_DECIMALS, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+}
+
+/** The values inside `rgb()`, `hsl()`, `hsv()` and `cmyk()`, each checked against its range. */
+private object Components {
+	/** Plain decimal numbers only: `toDouble` would also take NaN, Infinity and hex floats. */
+	private val decimal = Regex("[+-]?(\\d+\\.?\\d*|\\.\\d+)([eE][+-]?\\d+)?")
+
+	fun channel(part: String): Int {
+		val value = if (part.endsWith("%")) {
+			percent(part) * CHANNEL_MAX
+		} else {
+			number(part) ?: throw IllegalArgumentException(Colors.INVALID)
+		}
+		require(value in 0.0..CHANNEL_MAX) { Colors.INVALID }
 		return value.roundToInt()
 	}
 
-	private fun percent(part: String): Double {
-		val value = part.removeSuffix("%").toDoubleOrNull() ?: throw IllegalArgumentException(UNRECOGNISED)
-		require(value in 0.0..100.0) { UNRECOGNISED }
-		return value / 100
+	fun percent(part: String): Double {
+		val value = number(part.removeSuffix("%")) ?: throw IllegalArgumentException(Colors.INVALID)
+		require(value in 0.0..PERCENT) { Colors.INVALID }
+		return value / PERCENT
 	}
 
-	private fun alpha(part: String): Double {
-		val value = if (part.endsWith("%")) percent(part) else part.toDoubleOrNull() ?: throw IllegalArgumentException(UNRECOGNISED)
-		require(value in 0.0..1.0) { UNRECOGNISED }
+	fun alpha(part: String): Double {
+		val value = if (part.endsWith("%")) percent(part) else number(part) ?: throw IllegalArgumentException(Colors.INVALID)
+		require(value in 0.0..1.0) { Colors.INVALID }
 		return value
 	}
 
-	private fun hue(part: String): Double {
-		val value = part.removeSuffix("deg").toDoubleOrNull() ?: throw IllegalArgumentException(UNRECOGNISED)
-		return ((value % 360) + 360) % 360
+	fun hue(part: String): Double {
+		val value = number(part.removeSuffix("deg")) ?: throw IllegalArgumentException(Colors.INVALID)
+		return ((value % FULL_TURN) + FULL_TURN) % FULL_TURN
 	}
 
-	private fun fromHsl(h: Double, s: Double, l: Double, a: Double): Rgba {
+	private fun number(text: String) = text.takeIf { decimal.matches(it) }?.toDouble()
+}
+
+/** Conversions between sRGB and the hue-based spaces. */
+private object ColorSpaces {
+	fun fromHsl(h: Double, s: Double, l: Double, a: Double): Rgba {
 		val c = (1 - abs(2 * l - 1)) * s
 		return fromChroma(h, c, l - c / 2, a)
 	}
 
-	private fun fromHsv(h: Double, s: Double, v: Double): Rgba {
+	fun fromHsv(h: Double, s: Double, v: Double): Rgba {
 		val c = v * s
 		return fromChroma(h, c, v - c, 1.0)
 	}
 
 	private fun fromChroma(h: Double, c: Double, m: Double, a: Double): Rgba {
-		val x = c * (1 - abs((h / 60) % 2 - 1))
-		val (r, g, b) = when ((h / 60).toInt()) {
-			0 -> Triple(c, x, 0.0)
-			1 -> Triple(x, c, 0.0)
-			2 -> Triple(0.0, c, x)
-			3 -> Triple(0.0, x, c)
-			4 -> Triple(x, 0.0, c)
-			else -> Triple(c, 0.0, x)
-		}
-		return Rgba(((r + m) * 255).roundToInt(), ((g + m) * 255).roundToInt(), ((b + m) * 255).roundToInt(), a)
+		val x = c * (1 - abs((h / SECTOR_DEGREES) % 2 - 1))
+		val bySector = listOf(
+			Triple(c, x, 0.0), Triple(x, c, 0.0), Triple(0.0, c, x), Triple(0.0, x, c), Triple(x, 0.0, c), Triple(c, 0.0, x),
+		)
+		val (r, g, b) = bySector[(h / SECTOR_DEGREES).toInt().coerceIn(0, SECTORS - 1)]
+		fun scaled(value: Double) = ((value + m) * CHANNEL_MAX).roundToInt()
+		return Rgba(scaled(r), scaled(g), scaled(b), a)
 	}
 
 	private fun hueOf(r: Double, g: Double, b: Double, max: Double, delta: Double): Int {
 		if (delta == 0.0) return 0
-		val h = when (max) {
-			r -> 60 * (((g - b) / delta) % 6)
-			g -> 60 * ((b - r) / delta + 2)
-			else -> 60 * ((r - g) / delta + 4)
+		val sector = when (max) {
+			r -> ((g - b) / delta) % SECTORS
+			g -> (b - r) / delta + GREEN_SECTOR
+			else -> (r - g) / delta + BLUE_SECTOR
 		}
-		return ((h + 360) % 360).roundToInt() % 360
+		val h = sector * SECTOR_DEGREES
+		return ((h + FULL_TURN) % FULL_TURN).roundToInt() % FULL_TURN.toInt()
 	}
 
-	private fun toHsl(c: Rgba): Triple<Int, Int, Int> {
-		val (r, g, b) = listOf(c.r, c.g, c.b).map { it / 255.0 }
+	fun toHsl(c: Rgba): Triple<Int, Int, Int> {
+		val (r, g, b) = listOf(c.r, c.g, c.b).map { it / CHANNEL_MAX }
 		val hi = max(r, max(g, b))
 		val lo = min(r, min(g, b))
 		val l = (hi + lo) / 2
 		val delta = hi - lo
 		val s = if (delta == 0.0) 0.0 else delta / (1 - abs(2 * l - 1))
-		return Triple(hueOf(r, g, b, hi, delta), (s * 100).roundToInt(), (l * 100).roundToInt())
+		return Triple(hueOf(r, g, b, hi, delta), (s * PERCENT).roundToInt(), (l * PERCENT).roundToInt())
 	}
 
-	private fun toHsv(c: Rgba): Triple<Int, Int, Int> {
-		val (r, g, b) = listOf(c.r, c.g, c.b).map { it / 255.0 }
+	fun toHsv(c: Rgba): Triple<Int, Int, Int> {
+		val (r, g, b) = listOf(c.r, c.g, c.b).map { it / CHANNEL_MAX }
 		val hi = max(r, max(g, b))
 		val delta = hi - min(r, min(g, b))
 		val s = if (hi == 0.0) 0.0 else delta / hi
-		return Triple(hueOf(r, g, b, hi, delta), (s * 100).roundToInt(), (hi * 100).roundToInt())
+		return Triple(hueOf(r, g, b, hi, delta), (s * PERCENT).roundToInt(), (hi * PERCENT).roundToInt())
 	}
-
-	private fun trim(value: Double) = value.toBigDecimal().stripTrailingZeros().toPlainString()
 }

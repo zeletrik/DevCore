@@ -8,9 +8,22 @@ import com.vaadin.flow.router.BeforeEnterEvent
 import com.vaadin.flow.router.BeforeEnterObserver
 import com.vaadin.flow.router.HasDynamicTitle
 import eu.zeletrik.devcore.tools.FieldError
+import org.slf4j.LoggerFactory
 
 const val MAX_INPUT_CHARS = 1_000_000
 private const val TOO_LARGE = "Input is too large (max 1,000,000 characters)"
+private const val UNEXPECTED = "Couldn't process this input"
+private const val TOO_DEEP = "Couldn't process this input (too deeply nested)"
+
+private val log = LoggerFactory.getLogger(ToolView::class.java)
+
+/** One WARN line per unexpected failure: the tool and the exception's class only, never its message or any input. */
+internal fun logFailure(tool: Tool, error: Throwable) = log.warn("{} failed: {}", tool.id, error.javaClass.name)
+
+private fun TextFieldBase<*, String>.markInvalid(message: String) {
+	errorMessage = message
+	isInvalid = true
+}
 
 /** Every tool page: its title, a one-line description, and the deep-link `mode` (tools without modes ignore it). */
 abstract class ToolView(val tool: Tool) : VerticalLayout(), HasDynamicTitle, BeforeEnterObserver {
@@ -39,6 +52,10 @@ abstract class TextToolView<F : TextFieldBase<F, String>>(tool: Tool, internal v
 	private val required = mutableListOf<TextFieldBase<*, String>>()
 	private val byKey = mutableMapOf<String, TextFieldBase<*, String>>()
 
+	/** The main inputs' values at the last successful render; the outputs describe exactly these. */
+	private var renderedWith: List<String>? = null
+	private var keptOutput = false
+
 	init {
 		input.addValueChangeListener { recompute() }
 	}
@@ -64,11 +81,14 @@ abstract class TextToolView<F : TextFieldBase<F, String>>(tool: Tool, internal v
 	/** Runs work that depends only on an optional field; a failure marks just that field and returns null. */
 	protected fun <R> optional(component: TextFieldBase<*, String>, work: () -> R): R? {
 		component.isInvalid = false
-		if (component.value.length > MAX_INPUT_CHARS) return null.also { mark(component, TOO_LARGE) }
+		if (component.value.length > MAX_INPUT_CHARS) return null.also { component.markInvalid(TOO_LARGE) }
 		return try {
 			work()
+		} catch (e: OutputTooLarge) {
+			// A whole-output problem, not this field's: recompute reports it on the primary input.
+			throw e
 		} catch (e: IllegalArgumentException) {
-			null.also { mark(component, e.message ?: "Invalid value") }
+			null.also { component.markInvalid(e.message ?: "Invalid value") }
 		}
 	}
 
@@ -78,26 +98,51 @@ abstract class TextToolView<F : TextFieldBase<F, String>>(tool: Tool, internal v
 		val tooLarge = fields.firstOrNull { it.value.length > MAX_INPUT_CHARS }
 		when {
 			tooLarge != null -> fail(tooLarge, TOO_LARGE)
-			isEmpty() -> clearOutputs()
-			else -> try {
+			isEmpty() -> clearOutputs().also { renderedWith = null }
+			else -> runCatching {
+				keptOutput = false
 				render(input.value)
-			} catch (e: FieldError) {
-				fail(byKey[e.field] ?: input, e.message ?: "Invalid input")
-			} catch (e: IllegalArgumentException) {
-				fail(input, e.message ?: "Invalid input")
+				if (!keptOutput) renderedWith = mainInputs
+			}.onFailure(::failed)
+		}
+	}
+
+	/**
+	 * Invalid input marks its field. Anything else is the safety net: it is logged without the input, and the input shows
+	 * a generic message.
+	 */
+	private fun failed(e: Throwable) {
+		when (e) {
+			is FieldError -> fail(byKey[e.field] ?: input, e.message ?: "Invalid input")
+			is IllegalArgumentException -> fail(input, e.message ?: "Invalid input")
+			is StackOverflowError -> {
+				logFailure(tool, e)
+				fail(input, TOO_DEEP)
 			}
+			is RuntimeException -> {
+				logFailure(tool, e)
+				fail(input, UNEXPECTED)
+			}
+			else -> throw e
 		}
 	}
 
 	private fun fail(field: TextFieldBase<*, String>, message: String) {
-		mark(field, message)
+		field.markInvalid(message)
 		clearOutputs()
+		renderedWith = null
 	}
 
-	private fun mark(field: TextFieldBase<*, String>, message: String) {
-		field.errorMessage = message
-		field.isInvalid = true
+	/**
+	 * For a render that stops on an invalid option: the previous output stays only while the main inputs are the ones
+	 * it was computed from; once one of them changes, the outputs clear rather than describe text that is gone.
+	 */
+	protected fun keepOutputUnlessInputsChanged() {
+		keptOutput = true
+		if (mainInputs != renderedWith) clearOutputs()
 	}
+
+	private val mainInputs get() = listOf(input.value) + byKey.values.map { it.value }
 
 	override fun beforeEnter(event: BeforeEnterEvent) {
 		super.beforeEnter(event)
@@ -110,12 +155,15 @@ enum class Mode(val label: String) {
 
 	companion object {
 		/** Deep-link `mode` by name; any other value means the tool's default. */
-		fun fromParam(value: String?, default: Mode = ENCODE) = entries.firstOrNull { it.name.lowercase() == value } ?: default
+		fun fromParam(value: String?, default: Mode = ENCODE) =
+			entries.firstOrNull { it.name.lowercase() == value } ?: default
 	}
 }
 
-fun modeGroup(encode: String = Mode.ENCODE.label, decode: String = Mode.DECODE.label) = RadioButtonGroup<Mode>("Mode").apply {
-	setItems(*Mode.entries.toTypedArray())
-	setItemLabelGenerator { if (it == Mode.ENCODE) encode else decode }
-	value = Mode.ENCODE
-}
+/** The two-mode switch; [decodeFirst] lists Decode first for tools whose default is decoding. */
+fun modeGroup(encode: String = Mode.ENCODE.label, decode: String = Mode.DECODE.label, decodeFirst: Boolean = false) =
+	RadioButtonGroup<Mode>("Mode").apply {
+		setItems(*(if (decodeFirst) Mode.entries.reversed() else Mode.entries).toTypedArray())
+		setItemLabelGenerator { if (it == Mode.ENCODE) encode else decode }
+		value = Mode.ENCODE
+	}

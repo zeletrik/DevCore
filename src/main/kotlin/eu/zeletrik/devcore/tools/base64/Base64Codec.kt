@@ -14,7 +14,7 @@ object Base64Codec {
 		val bytes = try {
 			decoder.decode(text.filterNot(Char::isWhitespace))
 		} catch (e: IllegalArgumentException) {
-			throw IllegalArgumentException("Not valid Base64")
+			throw IllegalArgumentException("Invalid Base64", e)
 		}
 		return String(bytes, Charsets.UTF_8)
 	}

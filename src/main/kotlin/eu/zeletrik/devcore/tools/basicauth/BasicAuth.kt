@@ -5,7 +5,7 @@ import java.util.Base64
 
 /** RFC 7617: the UTF-8 bytes of `user:password`, Base64-encoded. */
 object BasicAuth {
-	private val prefix = Regex("^(authorization:\\s*)?(basic\\s+)?", RegexOption.IGNORE_CASE)
+	private val prefix = Regex("^((proxy-)?authorization:\\s*)?(basic\\s+)?", RegexOption.IGNORE_CASE)
 
 	fun encode(username: String, password: String): String {
 		if (':' in username) throw FieldError("username", "A username can't contain ':'")
@@ -18,7 +18,7 @@ object BasicAuth {
 		val decoded = try {
 			String(Base64.getDecoder().decode(token), Charsets.UTF_8)
 		} catch (_: IllegalArgumentException) {
-			throw IllegalArgumentException("Not valid Base64")
+			throw IllegalArgumentException("Invalid Base64")
 		}
 		val colon = decoded.indexOf(':')
 		require(colon >= 0) { "Decoded value has no ':' between username and password" }

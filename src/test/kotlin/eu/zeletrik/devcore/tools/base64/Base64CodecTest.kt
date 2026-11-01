@@ -33,7 +33,7 @@ class Base64CodecTest {
 	fun `invalid input is rejected with a fixed message`() {
 		listOf("aGk*" to false, "Pz8_" to false, "abcde" to false).forEach { (text, urlSafe) ->
 			val e = assertFailsWith<IllegalArgumentException> { Base64Codec.decode(text, urlSafe) }
-			assertEquals("Not valid Base64", e.message)
+			assertEquals("Invalid Base64", e.message)
 		}
 	}
 

@@ -26,10 +26,11 @@ import java.time.Instant
 import java.util.Base64
 import java.util.Date
 
-/** Certificates built for the tests; C is the criteria's reference certificate. */
+/** Certificates built for the tests; [c] is the server certificate most tests share. */
 internal object Fixtures {
 	private val rsa: KeyPair = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
-	private val ec: KeyPair = KeyPairGenerator.getInstance("EC").apply { initialize(ECGenParameterSpec("secp256r1")) }.generateKeyPair()
+	private val ec: KeyPair = KeyPairGenerator.getInstance("EC").apply { initialize(ECGenParameterSpec("secp256r1")) }
+		.generateKeyPair()
 
 	fun pem(label: String, der: ByteArray) =
 		"-----BEGIN $label-----\n${Base64.getMimeEncoder(64, "\n".toByteArray()).encodeToString(der)}\n-----END $label-----"
@@ -51,7 +52,13 @@ internal object Fixtures {
 
 	val c: String by lazy {
 		pem("CERTIFICATE", certificate {
-			addExtension(Extension.subjectAlternativeName, false, GeneralNames(arrayOf(GeneralName(GeneralName.dNSName, "example.com"), GeneralName(GeneralName.dNSName, "www.example.com"))))
+			addExtension(
+				Extension.subjectAlternativeName,
+				false,
+				GeneralNames(
+					arrayOf(GeneralName(GeneralName.dNSName, "example.com"), GeneralName(GeneralName.dNSName, "www.example.com"))
+				),
+			)
 			addExtension(Extension.keyUsage, true, KeyUsage(KeyUsage.digitalSignature or KeyUsage.keyEncipherment))
 			addExtension(Extension.extendedKeyUsage, false, ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth))
 			addExtension(Extension.basicConstraints, true, BasicConstraints(false))
@@ -62,12 +69,26 @@ internal object Fixtures {
 
 	val ecCertificate: String by lazy { pem("CERTIFICATE", certificate(keys = ec, signature = "SHA256withECDSA")) }
 
-	fun chain(): String = listOf("CN=one", "CN=two", "CN=three").joinToString("\n") { pem("CERTIFICATE", certificate(subject = it)) }
+	fun chain(): String =
+		listOf("CN=one", "CN=two", "CN=three").joinToString("\n") { pem("CERTIFICATE", certificate(subject = it)) }
 
 	fun withNetworkUrls(port: Int): String = pem("CERTIFICATE", certificate {
 		val url = GeneralName(GeneralName.uniformResourceIdentifier, "http://127.0.0.1:$port/x")
-		addExtension(Extension.authorityInfoAccess, false, AuthorityInformationAccess(arrayOf(AccessDescription(AccessDescription.id_ad_ocsp, url), AccessDescription(AccessDescription.id_ad_caIssuers, url))))
-		addExtension(Extension.cRLDistributionPoints, false, CRLDistPoint(arrayOf(DistributionPoint(DistributionPointName(GeneralNames(url)), null, null))))
+		addExtension(
+			Extension.authorityInfoAccess,
+			false,
+			AuthorityInformationAccess(
+				arrayOf(
+					AccessDescription(AccessDescription.id_ad_ocsp, url),
+					AccessDescription(AccessDescription.id_ad_caIssuers, url),
+				)
+			),
+		)
+		addExtension(
+			Extension.cRLDistributionPoints,
+			false,
+			CRLDistPoint(arrayOf(DistributionPoint(DistributionPointName(GeneralNames(url)), null, null))),
+		)
 	})
 
 	fun request(label: String = "CERTIFICATE REQUEST", tamper: Boolean = false): String {

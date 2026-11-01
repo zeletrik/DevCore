@@ -7,6 +7,8 @@ enum class EscapeFormat(val label: String) {
 	CODE_POINTS("U+XXXX"),
 }
 
+private const val ASCII_MAX = 0x7F
+
 object UnicodeEscapes {
 	private val REPLACEMENT = Char(0xFFFD)
 
@@ -17,7 +19,7 @@ object UnicodeEscapes {
 		return buildString {
 			text.codePoints().forEach { cp ->
 				when {
-					cp <= 0x7F && !escapeAscii -> appendCodePoint(cp)
+					cp <= ASCII_MAX && !escapeAscii -> appendCodePoint(cp)
 					format == EscapeFormat.UTF16 -> Character.toChars(cp).forEach { append("\\u%04X".format(it.code)) }
 					format == EscapeFormat.BRACED -> append("\\u{%X}".format(cp))
 					else -> append("&#x%X;".format(cp))
@@ -26,20 +28,26 @@ object UnicodeEscapes {
 		}
 	}
 
+	// Possessive quantifiers: a long `U+` run must not recurse once per token (that overflowed at a few thousand).
 	private val escape = Regex(
-		"""\\u([0-9A-Fa-f]{4})|\\u\{([0-9A-Fa-f]{1,6})\}|&#[xX]([0-9A-Fa-f]+);|&#([0-9]+);|(U\+[0-9A-Fa-f]+(?: U\+[0-9A-Fa-f]+)*)""",
+		"""\\u(?<utf16>[0-9A-Fa-f]{4})|\\u\{(?<braced>[0-9A-Fa-f]{1,6})\}|""" +
+			"""&#[xX](?<hex>[0-9A-Fa-f]+);|&#(?<decimal>[0-9]+);|""" +
+			"""U\+[0-9A-Fa-f]++(?: U\+[0-9A-Fa-f]++)*+""",
 	)
 
 	/** Never fails: anything that isn't a valid escape stays as written; unpaired surrogates become U+FFFD. */
 	fun decode(text: String): String {
 		val decoded = escape.replace(text) { match ->
-			val (utf16, braced, hex, decimal, run) = match.destructured
+			val utf16 = match.groups["utf16"]?.value
+			val braced = match.groups["braced"]?.value
+			val hex = match.groups["hex"]?.value
+			val decimal = match.groups["decimal"]?.value
 			when {
-				utf16.isNotEmpty() -> utf16.toInt(16).toChar().toString()
-				braced.isNotEmpty() -> codePoint(braced.toInt(16)) ?: match.value
-				hex.isNotEmpty() -> hex.toIntOrNull(16)?.let(::codePoint) ?: match.value
-				decimal.isNotEmpty() -> decimal.toIntOrNull()?.let(::codePoint) ?: match.value
-				else -> decodeRun(run)
+				utf16 != null -> utf16.toInt(16).toChar().toString()
+				braced != null -> codePoint(braced.toInt(16)) ?: match.value
+				hex != null -> hex.toIntOrNull(16)?.let(::codePoint) ?: match.value
+				decimal != null -> decimal.toIntOrNull()?.let(::codePoint) ?: match.value
+				else -> decodeRun(match.value)
 			}
 		}
 		return replaceLoneSurrogates(decoded)
@@ -47,14 +55,15 @@ object UnicodeEscapes {
 
 	/** `U+0048 U+0069` → `Hi`: a run's tokens collapse into characters; a token that isn't 4–6 digits stays. */
 	private fun decodeRun(run: String): String {
-		val tokens = run.split(' ').map { token ->
+		val raw = run.split(' ')
+		val tokens = raw.map { token ->
 			val digits = token.removePrefix("U+")
 			if (digits.length in 4..6) codePoint(digits.toInt(16)) else null
 		}
 		return buildString {
 			tokens.forEachIndexed { i, char ->
 				if (i > 0 && (char == null || tokens[i - 1] == null)) append(' ')
-				append(char ?: run.split(' ')[i])
+				append(char ?: raw[i])
 			}
 		}
 	}

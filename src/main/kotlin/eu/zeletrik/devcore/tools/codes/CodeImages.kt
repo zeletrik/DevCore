@@ -21,32 +21,35 @@ object CodeImages {
 	fun barcode(matrix: BitMatrix) = render(matrix, quiet = 0, module = 2, barHeight = 60)
 
 	private fun render(matrix: BitMatrix, quiet: Int, module: Int, barHeight: Int?): CodeImage {
-		val columns = matrix.width + 2 * quiet
-		val rows = (barHeight ?: matrix.height) + 2 * quiet
-		fun dark(x: Int, y: Int): Boolean {
-			val mx = x - quiet
-			val my = if (barHeight != null) 0 else y - quiet
-			val inside = mx in 0 until matrix.width && (barHeight != null && y - quiet in 0 until barHeight || my in 0 until matrix.height)
-			return inside && matrix[mx, my]
-		}
-		val image = BufferedImage(columns * module, rows * module, BufferedImage.TYPE_BYTE_GRAY)
-		for (y in 0 until rows) for (x in 0 until columns) {
-			val rgb = if (dark(x, y)) 0x000000 else 0xFFFFFF
+		val modules = Modules(matrix, quiet, barHeight)
+		return CodeImage(png(image(modules, module)), svg(modules, module))
+	}
+
+	private fun image(modules: Modules, module: Int): BufferedImage {
+		val image = BufferedImage(modules.columns * module, modules.rows * module, BufferedImage.TYPE_BYTE_GRAY)
+		for (y in 0 until modules.rows) for (x in 0 until modules.columns) {
+			val rgb = if (modules.dark(x, y)) 0x000000 else 0xFFFFFF
 			for (dy in 0 until module) for (dx in 0 until module) image.setRGB(x * module + dx, y * module + dy, rgb)
 		}
+		return image
+	}
+
+	/** One path for all dark modules: each horizontal run of them is one rectangle. */
+	private fun svg(modules: Modules, module: Int): String {
+		val (columns, rows) = modules.columns to modules.rows
 		val path = buildString {
 			for (y in 0 until rows) {
 				var x = 0
 				while (x < columns) {
-					if (!dark(x, y)) { x++; continue }
 					val start = x
-					while (x < columns && dark(x, y)) x++
-					append("M$start ${y}h${x - start}v1h-${x - start}z")
+					while (x < columns && modules.dark(x, y)) x++
+					if (x > start) append("M$start ${y}h${x - start}v1h-${x - start}z") else x++
 				}
 			}
 		}
-		val svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 $columns $rows" width="${columns * module}" height="${rows * module}" shape-rendering="crispEdges"><rect width="$columns" height="$rows" fill="#fff"/><path fill="#000" d="$path"/></svg>"""
-		return CodeImage(png(image), svg)
+		return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 $columns $rows" """ +
+			"""width="${columns * module}" height="${rows * module}" shape-rendering="crispEdges">""" +
+			"""<rect width="$columns" height="$rows" fill="#fff"/><path fill="#000" d="$path"/></svg>"""
 	}
 
 	/** In memory only: ImageIO.write would buffer through a temp file, and a WiFi QR holds a password. */
@@ -62,5 +65,20 @@ object CodeImages {
 			writer.dispose()
 		}
 		return out.toByteArray()
+	}
+}
+
+/** The code with its quiet zone, module by module; a 1D code's single row is repeated [barHeight] times. */
+private class Modules(private val matrix: BitMatrix, private val quiet: Int, private val barHeight: Int?) {
+	val columns = matrix.width + 2 * quiet
+	val rows = (barHeight ?: matrix.height) + 2 * quiet
+
+	fun dark(x: Int, y: Int): Boolean {
+		val mx = x - quiet
+		val my = if (barHeight != null) 0 else y - quiet
+		val inside = mx in 0 until matrix.width && (
+			barHeight != null && y - quiet in 0 until barHeight || my in 0 until matrix.height
+		)
+		return inside && matrix[mx, my]
 	}
 }

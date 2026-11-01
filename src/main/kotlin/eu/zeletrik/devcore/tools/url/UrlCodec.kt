@@ -11,6 +11,6 @@ object UrlCodec {
 	fun decode(text: String): String = try {
 		URLDecoder.decode(text, Charsets.UTF_8)
 	} catch (e: IllegalArgumentException) {
-		throw IllegalArgumentException("Malformed percent-encoding")
+		throw IllegalArgumentException("Malformed percent-encoding", e)
 	}
 }

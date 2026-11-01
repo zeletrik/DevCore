@@ -43,7 +43,7 @@ class TextDiffView : TextToolView<TextArea>(Tool.TEXT_DIFF, textArea("Original")
 	override fun isEmpty() = input.value.isEmpty() && changed.value.isEmpty()
 
 	override fun render(text: String) {
-		val lines = boundedInt(context, 0..20) ?: return
+		val lines = boundedInt(context, 0..20) ?: return keepOutputUnlessInputsChanged()
 		val diff = TextDiff.diff(text, changed.value, lines, ignoreCase.value, ignoreWhitespace.value)
 		status.text = diff.status
 		output.value = diff.unified

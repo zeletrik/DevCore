@@ -5,7 +5,6 @@ import com.vaadin.flow.component.checkbox.Checkbox
 import com.vaadin.flow.component.orderedlayout.FlexComponent
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup
-import com.vaadin.flow.component.select.Select
 import com.vaadin.flow.component.textfield.TextArea
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
@@ -24,21 +23,17 @@ import eu.zeletrik.devcore.tools.codes.CodeImages
 @UIScope
 class QrCodeView : TextToolView<TextArea>(Tool.QR, textArea("Text or URL")) {
 	internal val wifiMode = RadioButtonGroup("Content", false, true).apply {
-		setItemLabelGenerator { if (it) "WiFi network" else "Text/URL" }
+		setItemLabelGenerator { if (it) "Wi-Fi network" else "Text or URL" }
 		value = false
 		addValueChangeListener { showFields(); recompute() }
 	}
-	internal val level = Select<ErrorCorrectionLevel>().apply {
-		label = "Error correction"
-		setItems(*ErrorCorrectionLevel.entries.toTypedArray())
+	internal val level = RadioButtonGroup("Error correction", *ErrorCorrectionLevel.entries.toTypedArray()).apply {
 		value = ErrorCorrectionLevel.M
 		addValueChangeListener { recompute() }
 	}
 	internal val ssid = field(textLine("SSID"), "ssid")
 	internal val password = field(textLine("Password"), "password")
-	internal val security = Select<WifiSecurity>().apply {
-		label = "Security"
-		setItems(*WifiSecurity.entries.toTypedArray())
+	internal val security = RadioButtonGroup("Security", *WifiSecurity.entries.toTypedArray()).apply {
 		setItemLabelGenerator { it.label }
 		value = WifiSecurity.WPA
 		addValueChangeListener { recompute() }

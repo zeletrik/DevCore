@@ -48,6 +48,9 @@ fun boundedInt(field: IntegerField, range: IntRange): Int? {
 fun boundedLong(field: TextField, range: LongRange = Long.MIN_VALUE..Long.MAX_VALUE): Long? {
 	val value = field.value.trim().toLongOrNull()?.takeIf { it in range }
 	field.isInvalid = value == null
-	if (value == null) field.errorMessage = "Enter a whole number from ${range.first} to ${range.last}"
+	if (value == null) {
+		val full = range.first == Long.MIN_VALUE && range.last == Long.MAX_VALUE
+		field.errorMessage = if (full) "Enter a whole number" else "Enter a whole number from ${range.first} to ${range.last}"
+	}
 	return value
 }

@@ -12,14 +12,14 @@ class CronTest {
 	private val budapest = ZoneId.of("Europe/Budapest")
 	private val now = Instant.parse("2026-10-29T10:00:00Z")
 
-	private fun describe(expression: String, flavour: CronFlavour = CronFlavour.UNIX) =
-		CronDescriber.describe(CronFlavours.parse(expression, flavour))
+	private fun describe(expression: String, flavor: CronFlavor = CronFlavor.UNIX) =
+		CronDescriber.describe(CronFlavors.parse(expression, flavor))
 
-	private fun runs(expression: String, flavour: CronFlavour = CronFlavour.UNIX, at: Instant = now) =
-		CronFlavours.nextRuns(CronFlavours.parse(expression, flavour), at, budapest)
+	private fun runs(expression: String, flavor: CronFlavor = CronFlavor.UNIX, at: Instant = now) =
+		CronFlavors.nextRuns(CronFlavors.parse(expression, flavor), at, budapest)
 
-	private fun error(expression: String, flavour: CronFlavour = CronFlavour.UNIX) =
-		assertFailsWith<IllegalArgumentException> { CronFlavours.parse(expression, flavour) }.message!!
+	private fun error(expression: String, flavor: CronFlavor = CronFlavor.UNIX) =
+		assertFailsWith<IllegalArgumentException> { CronFlavors.parse(expression, flavor) }.message!!
 
 	@Test
 	fun `descriptions - the special forms`() {
@@ -28,15 +28,15 @@ class CronTest {
 		assertEquals("Every minute", describe("* * * * *"))
 		assertEquals("At minute 30 of every hour", describe("30 * * * *"))
 		assertEquals("At minute 0 of every hour", describe("@hourly"))
-		assertEquals("At 09:00:30", describe("30 0 9 * * *", CronFlavour.SPRING))
+		assertEquals("At 09:00:30", describe("30 0 9 * * *", CronFlavor.SPRING))
 		assertEquals("At 00:00, on day 1 of the month, in January", describe("0 0 1 1 *"))
 		assertEquals("At 00:00, on day 1 of the month or on Monday", describe("0 0 1 * 1"))
-		assertEquals("At 10:15, on the third Friday of the month", describe("0 15 10 ? * 6#3", CronFlavour.QUARTZ))
-		assertEquals("At 00:00, on the last day of the month", describe("0 0 0 L * ?", CronFlavour.SPRING))
-		assertEquals("At 00:00, on the weekday nearest day 15", describe("0 0 0 15W * ?", CronFlavour.SPRING))
-		assertEquals("At 00:00, on the last Friday of the month", describe("0 0 0 ? * 5L", CronFlavour.SPRING))
+		assertEquals("At 10:15, on the third Friday of the month", describe("0 15 10 ? * 6#3", CronFlavor.QUARTZ))
+		assertEquals("At 00:00, on the last day of the month", describe("0 0 0 L * ?", CronFlavor.SPRING))
+		assertEquals("At 00:00, on the weekday nearest day 15", describe("0 0 0 15W * ?", CronFlavor.SPRING))
+		assertEquals("At 00:00, on the last Friday of the month", describe("0 0 0 ? * 5L", CronFlavor.SPRING))
 		assertEquals("At 00:00, on day 1 of the month, January through March", describe("0 0 1 1-3 *"))
-		assertEquals("At 00:00, on day 1 of the month, every 3 months", describe("0 0 1 */3 *"))
+		assertEquals("At 00:00, on day 1 of the month, in January, April, July and October", describe("0 0 1 */3 *"))
 	}
 
 	@Test
@@ -48,7 +48,13 @@ class CronTest {
 	@Test
 	fun `next runs in the selected zone`() {
 		assertEquals(
-			listOf("2026-10-30T09:00:00+01:00", "2026-11-02T09:00:00+01:00", "2026-11-03T09:00:00+01:00", "2026-11-04T09:00:00+01:00", "2026-11-05T09:00:00+01:00"),
+			listOf(
+				"2026-10-30T09:00:00+01:00",
+				"2026-11-02T09:00:00+01:00",
+				"2026-11-03T09:00:00+01:00",
+				"2026-11-04T09:00:00+01:00",
+				"2026-11-05T09:00:00+01:00",
+			),
 			runs("0 9 * * 1-5"),
 		)
 		assertEquals(emptyList(), runs("0 0 30 2 *"))
@@ -57,17 +63,32 @@ class CronTest {
 	@Test
 	fun `unix either-day rule, spring both-days rule`() {
 		assertEquals(
-			listOf("2026-11-01T00:00:00+01:00", "2026-11-02T00:00:00+01:00", "2026-11-09T00:00:00+01:00", "2026-11-16T00:00:00+01:00", "2026-11-23T00:00:00+01:00"),
+			listOf(
+				"2026-11-01T00:00:00+01:00",
+				"2026-11-02T00:00:00+01:00",
+				"2026-11-09T00:00:00+01:00",
+				"2026-11-16T00:00:00+01:00",
+				"2026-11-23T00:00:00+01:00",
+			),
 			runs("0 0 1 * 1"),
 		)
-		assertEquals(listOf("2027-02-01T00:00:00+01:00", "2027-03-01T00:00:00+01:00"), runs("0 0 0 1 * MON", CronFlavour.SPRING).take(2))
+		assertEquals(
+			listOf("2027-02-01T00:00:00+01:00", "2027-03-01T00:00:00+01:00"),
+			runs("0 0 0 1 * MON", CronFlavor.SPRING).take(2),
+		)
 	}
 
 	@Test
 	fun `spring seconds field`() {
 		assertEquals(
-			listOf("2026-10-29T11:05:00+01:00", "2026-10-29T11:10:00+01:00", "2026-10-29T11:15:00+01:00", "2026-10-29T11:20:00+01:00", "2026-10-29T11:25:00+01:00"),
-			runs("0 */5 * * * *", CronFlavour.SPRING, Instant.parse("2026-10-29T10:02:30Z")),
+			listOf(
+				"2026-10-29T11:05:00+01:00",
+				"2026-10-29T11:10:00+01:00",
+				"2026-10-29T11:15:00+01:00",
+				"2026-10-29T11:20:00+01:00",
+				"2026-10-29T11:25:00+01:00",
+			),
+			runs("0 */5 * * * *", CronFlavor.SPRING, Instant.parse("2026-10-29T10:02:30Z")),
 		)
 	}
 
@@ -86,12 +107,18 @@ class CronTest {
 	@Test
 	fun `quartz numbering, year field and the question-mark rule`() {
 		assertEquals(
-			listOf("2026-11-02T12:00:00+01:00", "2026-11-09T12:00:00+01:00", "2026-11-16T12:00:00+01:00", "2026-11-23T12:00:00+01:00", "2026-11-30T12:00:00+01:00"),
-			runs("0 0 12 ? * 2", CronFlavour.QUARTZ),
+			listOf(
+				"2026-11-02T12:00:00+01:00",
+				"2026-11-09T12:00:00+01:00",
+				"2026-11-16T12:00:00+01:00",
+				"2026-11-23T12:00:00+01:00",
+				"2026-11-30T12:00:00+01:00",
+			),
+			runs("0 0 12 ? * 2", CronFlavor.QUARTZ),
 		)
-		assertEquals(runs("0 0 12 ? * MON", CronFlavour.QUARTZ), runs("0 0 12 ? * MON *", CronFlavour.QUARTZ))
-		assertEquals("The year field isn't supported", error("0 0 12 * * ? 2030", CronFlavour.QUARTZ))
-		listOf("0 0 12 * * MON", "0 0 12 ? * ?").forEach { assertTrue(error(it, CronFlavour.QUARTZ).contains("'?'"), it) }
+		assertEquals(runs("0 0 12 ? * MON", CronFlavor.QUARTZ), runs("0 0 12 ? * MON *", CronFlavor.QUARTZ))
+		assertEquals("The year field isn't supported", error("0 0 12 * * ? 2030", CronFlavor.QUARTZ))
+		listOf("0 0 12 * * MON", "0 0 12 ? * ?").forEach { assertTrue(error(it, CronFlavor.QUARTZ).contains("'?'"), it) }
 	}
 
 	@Test

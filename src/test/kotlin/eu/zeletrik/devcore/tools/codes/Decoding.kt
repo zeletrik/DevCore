@@ -28,7 +28,11 @@ internal fun decodeSvg(svg: String): Result {
 	for (y in 0 until image.height) for (x in 0 until image.width) image.setRGB(x, y, 0xFFFFFF)
 	Regex("""M(\d+) (\d+)h(\d+)v1h-\d+z""").findAll(svg).forEach { run ->
 		val (x0, y0, length) = run.destructured.toList().map(String::toInt)
-		for (x in x0 until x0 + length) for (dy in 0 until scale) for (dx in 0 until scale) image.setRGB(x * scale + dx, y0 * scale + dy, 0)
+		for (x in x0 until x0 + length) for (dy in 0 until scale) for (dx in 0 until scale) image.setRGB(
+			x * scale + dx,
+			y0 * scale + dy,
+			0,
+		)
 	}
 	return decode(image)
 }

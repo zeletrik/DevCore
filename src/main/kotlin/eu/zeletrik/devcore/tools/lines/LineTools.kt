@@ -36,7 +36,14 @@ object LineTools {
 
 	private fun byCodePoint(a: String, b: String) = Arrays.compare(a.codePoints().toArray(), b.codePoints().toArray())
 
-	private val chunk = Regex("\\d+|\\D+")
+	private val chunk = Regex("[0-9]+|[^0-9]+")
+
+	/** Two ASCII digit runs by numeric value without parsing them: fewer significant digits first, then digit by digit. */
+	private fun byValue(a: String, b: String): Int {
+		val x = a.trimStart('0')
+		val y = b.trimStart('0')
+		return if (x.length != y.length) x.length.compareTo(y.length) else x.compareTo(y)
+	}
 
 	/** Digit runs compare by numeric value, everything else by code point: item2 < item10. */
 	private fun natural(a: String, b: String): Int {
@@ -44,7 +51,7 @@ object LineTools {
 		val y = chunk.findAll(b).map { it.value }.toList()
 		for (i in 0 until minOf(x.size, y.size)) {
 			val (p, q) = x[i] to y[i]
-			val order = if (p[0].isDigit() && q[0].isDigit()) p.toBigInteger().compareTo(q.toBigInteger()) else byCodePoint(p, q)
+			val order = if (p[0] in '0'..'9' && q[0] in '0'..'9') byValue(p, q) else byCodePoint(p, q)
 			if (order != 0) return order
 		}
 		return x.size.compareTo(y.size)

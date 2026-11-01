@@ -1,0 +1,32 @@
+name: Tool request
+description: Suggest a new tool, or a change to an existing one
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        DevCore's tools run on the server with no outbound calls, no network lookups and no stored data.
+        A tool that needs any of those doesn't fit.
+  - type: textarea
+    id: what
+    attributes:
+      label: What should the tool do?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: A sample input and the output you expect.
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What you would use it for, and what you use today instead.
+  - type: checkboxes
+    id: offline
+    attributes:
+      label: Fit
+      options:
+        - label: The tool works without network access, an account or stored data.
+          required: true

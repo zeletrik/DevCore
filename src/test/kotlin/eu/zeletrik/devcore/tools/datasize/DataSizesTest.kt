@@ -22,7 +22,14 @@ class DataSizesTest {
 	@Test
 	fun `binary source, plain notation, fractions and zero`() {
 		val gib = lines("1", DataUnit.GIB)
-		listOf("8589934592 bit", "1073741824 B", "1073.741824 MB", "1.073742 GB", "1048576 KiB", "1024 MiB").forEach { assertTrue(it in gib, it) }
+		listOf(
+			"8589934592 bit",
+			"1073741824 B",
+			"1073.741824 MB",
+			"1.073742 GB",
+			"1048576 KiB",
+			"1024 MiB",
+		).forEach { assertTrue(it in gib, it) }
 		val pb = lines("1", DataUnit.PB)
 		assertTrue("8000000000000000 bit" in pb && "976562500000 KiB" in pb)
 		assertTrue("1500 kB" in lines("1.5", DataUnit.MB))

@@ -14,7 +14,7 @@ import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.boundedInt
 import eu.zeletrik.devcore.shell.numberField
 
-@Route("lorem-ipsum", layout = MainLayout::class)
+@Route("lorem-ipsum-generator", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class LoremView : GeneratorView(Tool.LOREM) {
@@ -24,12 +24,18 @@ class LoremView : GeneratorView(Tool.LOREM) {
 		addValueChangeListener { generate() }
 	}
 	internal val count = numberField("Count", 1..100, 3).apply { addValueChangeListener { generate() } }
-	internal val classic = Checkbox("Start with \"Lorem ipsum dolor sit amet…\"", true).apply { addValueChangeListener { generate() } }
+	internal val classic = Checkbox(
+		"Start with \"Lorem ipsum dolor sit amet…\"",
+		true,
+	).apply { addValueChangeListener { generate() } }
 	internal val output = OutputField("Text")
 
 	init {
 		add(
-			HorizontalLayout(unit, count, classic, generateButton).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true },
+			HorizontalLayout(unit, count, classic, generateButton, generateError).apply {
+				defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
+				isWrap = true
+			},
 			output,
 		)
 	}

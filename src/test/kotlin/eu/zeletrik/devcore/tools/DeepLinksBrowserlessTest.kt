@@ -2,6 +2,7 @@ package eu.zeletrik.devcore.tools
 
 import com.vaadin.browserless.SpringBrowserlessTest
 import com.vaadin.flow.component.Component
+import com.vaadin.flow.component.UI
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup
 import com.vaadin.flow.component.textfield.PasswordField
 import com.vaadin.flow.component.textfield.TextArea
@@ -24,20 +25,28 @@ class DeepLinksBrowserlessTest : SpringBrowserlessTest() {
 	private val linked = setOf(
 		"barcode-generator", "base64", "case-converter", "certificate-decoder", "chmod-calculator", "color-converter",
 		"cron-explainer", "data-format-converter", "data-size-converter", "hash-generator", "html-entities", "json-formatter",
-		"jsonpath-tester", "jwt", "line-tools", "markdown-to-html", "morse-code", "nato-alphabet", "number-base",
+		"jsonpath-tester", "jwt", "line-tools", "markdown-to-html", "morse-code", "nato-alphabet", "number-base-converter",
 		"qr-code-generator", "regex-tester", "sql-formatter", "string-escape", "subnet-calculator", "text-statistics",
-		"time-zone-converter", "timestamp", "unicode-escape", "url-encoder", "url-parser", "xml-formatter",
+		"time-zone-converter", "timestamp-converter", "unicode-escape", "url-encoder", "url-parser", "xml-formatter",
 	)
 
 	/** Mode names per tool, the default first. */
 	private val modes = mapOf(
-		"base64" to listOf("encode", "decode"), "html-entities" to listOf("encode", "decode"), "morse-code" to listOf("encode", "decode"),
-		"string-escape" to listOf("encode", "decode"), "unicode-escape" to listOf("encode", "decode"), "url-encoder" to listOf("encode", "decode"),
-		"basic-auth" to listOf("encode", "decode"), "jwt" to listOf("decode", "encode"), "password-hashing" to listOf("hash", "verify"),
+		"base64" to listOf("encode", "decode"),
+		"html-entities" to listOf("encode", "decode"),
+		"morse-code" to listOf("encode", "decode"),
+		"string-escape" to listOf("encode", "decode"),
+		"unicode-escape" to listOf("encode", "decode"),
+		"url-encoder" to listOf("encode", "decode"),
+		"basic-auth" to listOf("encode", "decode"),
+		"jwt" to listOf("decode", "encode"),
+		"password-hashing" to listOf("hash", "verify"),
 	)
 
-	@Suppress("UNCHECKED_CAST")
-	private fun open(location: String, tool: Tool) = navigate(location, tool.view as Class<Component>)
+	private fun open(location: String, tool: Tool): Component {
+		UI.getCurrent().navigate(location)
+		return (currentView as Component).also { assertTrue(tool.view.isInstance(it), location) }
+	}
 
 	private fun Component.textFields(): List<Component> = children.toList().flatMap { child ->
 		val editable = (child is TextField || child is TextArea || child is PasswordField) &&
@@ -45,7 +54,8 @@ class DeepLinksBrowserlessTest : SpringBrowserlessTest() {
 		(if (editable) listOf(child) else emptyList()) + child.textFields()
 	}
 
-	private fun Component.fieldValues() = textFields().map { (it as com.vaadin.flow.component.HasValue<*, *>).value as String }
+	private fun Component.fieldValues() =
+		textFields().map { (it as com.vaadin.flow.component.HasValue<*, *>).value as String }
 
 	private fun Component.modeName(): String {
 		val group = this::class.memberProperties.first { it.name == "mode" }.getter.call(this) as RadioButtonGroup<*>
@@ -67,16 +77,37 @@ class DeepLinksBrowserlessTest : SpringBrowserlessTest() {
 		val regex = navigate("regex-tester?input=a1b22", RegexView::class.java)
 		assertEquals("a1b22" to "", regex.input.value to regex.pattern.value)
 		assertEquals("$", navigate("jsonpath-tester?input=%7B%22a%22%3A1%7D", JsonPathView::class.java).path.value)
-		assertEquals("""{"sub":"1"}""", navigate("jwt?mode=encode&input=%7B%22sub%22%3A%221%22%7D", JwtView::class.java).input.value)
-		val decode = navigate("basic-auth?mode=decode&input=Basic%20QWxhZGRpbjpvcGVuIHNlc2FtZQ%3D%3D", BasicAuthView::class.java)
-		assertEquals("Aladdin" to "open sesame", decode.decodedUsername.value to decode.decodedPassword.value)
+		assertEquals(
+			"""{"sub":"1"}""",
+			navigate("jwt?mode=encode&input=%7B%22sub%22%3A%221%22%7D", JwtView::class.java).input.value,
+		)
+		val decode = navigate(
+			"basic-auth?mode=decode&input=Basic%20QWxhZGRpbjpvcGVuIHNlc2FtZQ%3D%3D",
+			BasicAuthView::class.java,
+		)
+		assertEquals(
+			listOf("", "", ""),
+			listOf(decode.input.value, decode.decodedUsername.value, decode.decodedPassword.value),
+		)
 		val encode = navigate("basic-auth?input=alice", BasicAuthView::class.java)
 		assertEquals(listOf("", ""), listOf(encode.username.value, encode.password.value))
 	}
 
 	@Test
 	fun `no secret or other field is ever read from the URL`() {
-		val params = listOf("password", "secret", "key", "hmac", "ssid", "pattern", "path", "replacement", "comment", "hash", "changed")
+		val params = listOf(
+			"password",
+			"secret",
+			"key",
+			"hmac",
+			"ssid",
+			"pattern",
+			"path",
+			"replacement",
+			"comment",
+			"hash",
+			"changed",
+		)
 			.joinToString("&") { "$it=from-url" }
 		Tool.entries.forEach { tool ->
 			val view = open("${tool.id}?$params", tool)

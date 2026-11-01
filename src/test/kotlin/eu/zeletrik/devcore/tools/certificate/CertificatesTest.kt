@@ -16,7 +16,8 @@ class CertificatesTest {
 
 	private fun lines(text: String, at: Instant = now) = Certificates.decode(text, at).lines()
 
-	private fun value(text: String, label: String, at: Instant = now) = lines(text, at).first { it.startsWith("$label: ") }.substringAfter(": ")
+	private fun value(text: String, label: String, at: Instant = now) =
+		lines(text, at).first { it.startsWith("$label: ") }.substringAfter(": ")
 
 	private fun error(text: String) = assertFailsWith<IllegalArgumentException> { Certificates.decode(text, now) }.message
 
@@ -36,7 +37,10 @@ class CertificatesTest {
 		assertEquals("TLS server authentication", value(c, "Extended key usage"))
 		assertEquals("not a CA", value(c, "Basic constraints"))
 		val hex = HexFormat.ofDelimiter(":").withUpperCase()
-		assertEquals(hex.formatHex(MessageDigest.getInstance("SHA-256").digest(Fixtures.cDer)), value(c, "SHA-256 fingerprint"))
+		assertEquals(
+			hex.formatHex(MessageDigest.getInstance("SHA-256").digest(Fixtures.cDer)),
+			value(c, "SHA-256 fingerprint"),
+		)
 		assertEquals(hex.formatHex(MessageDigest.getInstance("SHA-1").digest(Fixtures.cDer)), value(c, "SHA-1 fingerprint"))
 	}
 
@@ -58,8 +62,14 @@ class CertificatesTest {
 	@Test
 	fun `chains are numbered, private keys and surrounding text are ignored`() {
 		val decoded = Certificates.decode("Here is my chain:\n" + Fixtures.chain() + "\n" + Fixtures.privateKey, now)
-		assertEquals(listOf("Certificate 1 of 3", "Certificate 2 of 3", "Certificate 3 of 3"), decoded.lines().filter { it.startsWith("Certificate ") })
-		assertEquals(listOf("CN=one", "CN=two", "CN=three"), decoded.lines().filter { it.startsWith("Subject: ") }.map { it.substringAfter(": ") })
+		assertEquals(
+			listOf("Certificate 1 of 3", "Certificate 2 of 3", "Certificate 3 of 3"),
+			decoded.lines().filter { it.startsWith("Certificate ") },
+		)
+		assertEquals(
+			listOf("CN=one", "CN=two", "CN=three"),
+			decoded.lines().filter { it.startsWith("Subject: ") }.map { it.substringAfter(": ") },
+		)
 		assertFalse("PRIVATE" in decoded)
 		val brokenKey = Fixtures.c + "\n-----BEGIN PRIVATE KEY-----\n!!! not base64 !!!\n-----END PRIVATE KEY-----"
 		assertEquals("Certificate 1 of 1", lines(brokenKey).first())
@@ -82,7 +92,10 @@ class CertificatesTest {
 		assertEquals("No PEM certificate or certificate request found", error(Fixtures.privateKey))
 		val broken = Fixtures.c + "\n-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----"
 		assertEquals("Certificate 2 could not be read", error(broken))
-		assertEquals("The certificate request could not be read", error("-----BEGIN CERTIFICATE REQUEST-----\nAAAA\n-----END CERTIFICATE REQUEST-----"))
+		assertEquals(
+			"The certificate request could not be read",
+			error("-----BEGIN CERTIFICATE REQUEST-----\nAAAA\n-----END CERTIFICATE REQUEST-----"),
+		)
 	}
 
 	@Test

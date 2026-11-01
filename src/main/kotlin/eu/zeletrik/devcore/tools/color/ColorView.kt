@@ -22,9 +22,9 @@ private const val PICK_INTERVAL_MS = 150
 @Route("color-converter", layout = MainLayout::class)
 @SpringComponent
 @UIScope
-class ColorView : TextToolView<TextField>(Tool.COLOR, textLine("Colour")) {
+class ColorView : TextToolView<TextField>(Tool.COLOR, textLine("Color")) {
 	/**
-	 * The browser's native colour picker; whatever it picks goes into the input as #rrggbb. The page can't close the
+	 * The browser's native color picker; whatever it picks goes into the input as #rrggbb. The page can't close the
 	 * browser's picker, so each pick applies while it is still open, and closing it is never a separate step.
 	 */
 	internal val picker = Input().apply {
@@ -41,7 +41,7 @@ class ColorView : TextToolView<TextField>(Tool.COLOR, textLine("Colour")) {
 		style.set("border-radius", "0.5rem").set("border", "1px solid var(--vaadin-border-color, #ccc)")
 		isVisible = false
 	}
-	internal val hex = OutputField("HEX")
+	internal val hex = OutputField("Hex")
 	internal val rgb = OutputField("RGB")
 	internal val hsl = OutputField("HSL")
 	internal val hsv = OutputField("HSV")
@@ -50,10 +50,13 @@ class ColorView : TextToolView<TextField>(Tool.COLOR, textLine("Colour")) {
 
 	init {
 		val hint = Span("Applies as you pick").apply { style.set("color", "var(--vaadin-text-color-secondary)") }
-		val pick = HorizontalLayout(NativeLabel("Pick a colour").apply { setFor(picker) }, picker, hint)
+		val pick = HorizontalLayout(NativeLabel("Pick a color").apply { setFor(picker) }, picker, hint)
 			.apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.CENTER }
 		add(
-			HorizontalLayout(input, swatch).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.END; setWidthFull() },
+			HorizontalLayout(input, swatch).apply {
+				defaultVerticalComponentAlignment = FlexComponent.Alignment.END
+				setWidthFull()
+			},
 			pick, hex, rgb, hsl, hsv, cmyk, name,
 		)
 	}

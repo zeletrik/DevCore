@@ -26,7 +26,10 @@ class ToolViewsBrowserlessTest : SpringBrowserlessTest() {
 
 	@Test
 	fun `json - ticking expand re-renders with embedded JSON as structure`() {
-		val view = navigate("json-formatter?input=%7B%22m%22%3A%22%7B%5C%22a%5C%22%3A1%7D%22%7D", JsonFormatterView::class.java)
+		val view = navigate(
+			"json-formatter?input=%7B%22m%22%3A%22%7B%5C%22a%5C%22%3A1%7D%22%7D",
+			JsonFormatterView::class.java,
+		)
 		assertTrue(view.output.value.contains("\"m\": \"{"))
 		test(view.expand).click()
 		assertEquals("{\n  \"m\": {\n    \"a\": 1\n  }\n}", view.output.value)
@@ -54,7 +57,7 @@ class ToolViewsBrowserlessTest : SpringBrowserlessTest() {
 
 	@Test
 	fun `timestamp defaults to UTC, follows zone changes, and Now fills the input`() {
-		val view = navigate("timestamp?input=2026-10-28T10:00:00", TimestampView::class.java)
+		val view = navigate("timestamp-converter?input=2026-10-28T10:00:00", TimestampView::class.java)
 		assertEquals("UTC", view.zone.value)
 		assertEquals("2026-10-28T10:00:00Z", view.utc.value)
 		test(view.zone).selectItem("Europe/Budapest")

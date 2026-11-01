@@ -1,7 +1,9 @@
 package eu.zeletrik.devcore.shell
 
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /** Ids are a public contract (deep links, bookmarks, Raycast quicklinks): never change a released one. */
 class ToolIdsTest {
@@ -15,7 +17,7 @@ class ToolIdsTest {
 				Tool.JWT to "jwt",
 				Tool.HASH to "hash-generator",
 				Tool.UUID to "uuid-generator",
-				Tool.TIMESTAMP to "timestamp",
+				Tool.TIMESTAMP to "timestamp-converter",
 				Tool.HTML_ENTITIES to "html-entities",
 				Tool.UNICODE_ESCAPE to "unicode-escape",
 				Tool.STRING_ESCAPE to "string-escape",
@@ -36,16 +38,16 @@ class ToolIdsTest {
 				Tool.QR to "qr-code-generator",
 				Tool.BARCODE to "barcode-generator",
 				Tool.PASSWORD to "password-generator",
-				Tool.LOREM to "lorem-ipsum",
-				Tool.RANDOM_NUMBER to "random-number",
-				Tool.RANDOM_PORT to "random-port",
+				Tool.LOREM to "lorem-ipsum-generator",
+				Tool.RANDOM_NUMBER to "random-number-generator",
+				Tool.RANDOM_PORT to "random-port-generator",
 				Tool.PASSWORD_HASHING to "password-hashing",
 				Tool.KEY_PAIR to "key-pair-generator",
 				Tool.CERTIFICATE to "certificate-decoder",
 				Tool.BASIC_AUTH to "basic-auth",
 				Tool.SUBNET to "subnet-calculator",
 				Tool.URL_PARSER to "url-parser",
-				Tool.NUMBER_BASE to "number-base",
+				Tool.NUMBER_BASE to "number-base-converter",
 				Tool.DATA_SIZE to "data-size-converter",
 				Tool.CHMOD to "chmod-calculator",
 				Tool.COLOR to "color-converter",
@@ -111,7 +113,7 @@ class ToolIdsTest {
 				"chmod-calculator" to "Chmod Calculator",
 				"color-converter" to "Color Converter",
 				"data-size-converter" to "Data Size Converter",
-				"number-base" to "Number Base Converter",
+				"number-base-converter" to "Number Base Converter",
 				"data-format-converter" to "Data Format Converter",
 				"json-formatter" to "JSON Formatter",
 				"jsonpath-tester" to "JSONPath Tester",
@@ -120,21 +122,21 @@ class ToolIdsTest {
 				"xml-formatter" to "XML Formatter",
 				"cron-explainer" to "Cron Explainer",
 				"time-zone-converter" to "Time Zone Converter",
-				"timestamp" to "Timestamp Converter",
+				"timestamp-converter" to "Timestamp Converter",
 				"base64" to "Base64 Encoder/Decoder",
 				"html-entities" to "HTML Entity Encoder/Decoder",
 				"morse-code" to "Morse Code",
 				"nato-alphabet" to "NATO Phonetic Alphabet",
 				"string-escape" to "String Escape/Unescape",
-				"unicode-escape" to "Unicode Escape",
+				"unicode-escape" to "Unicode Escape/Unescape",
 				"url-encoder" to "URL Encoder/Decoder",
 				"barcode-generator" to "Barcode Generator",
-				"lorem-ipsum" to "Lorem Ipsum",
+				"lorem-ipsum-generator" to "Lorem Ipsum Generator",
 				"password-generator" to "Password Generator",
 				"qr-code-generator" to "QR Code Generator",
-				"random-number" to "Random Number Generator",
+				"random-number-generator" to "Random Number Generator",
 				"uuid-generator" to "UUID Generator",
-				"random-port" to "Random Port Generator",
+				"random-port-generator" to "Random Port Generator",
 				"subnet-calculator" to "Subnet Calculator",
 				"url-parser" to "URL Parser",
 				"basic-auth" to "Basic Auth Header",
@@ -151,5 +153,38 @@ class ToolIdsTest {
 			),
 			Tool.entries.associate { it.id to it.title },
 		)
+	}
+
+	@Test
+	fun `every tool has its own icon`() {
+		assertEquals(Tool.entries.size, Tool.entries.map { it.icon }.toSet().size)
+	}
+
+	private val verbs = setOf(
+		"Build", "Calculate", "Compare", "Compute", "Convert", "Count", "Describe", "Draw", "Encode", "Escape", "Format",
+		"Generate", "Hash", "Inspect", "Lay", "Percent-encode", "Pick", "Pretty-print", "Query", "Read", "Show", "Sort",
+		"Spell", "Split", "Translate", "Try", "Write",
+	)
+
+	@Test
+	fun `descriptions start with a verb and have no final period`() {
+		Tool.entries.forEach {
+			assertTrue(it.description.substringBefore(' ').trimEnd(',') in verbs, it.description)
+			assertTrue(!it.description.endsWith("."), it.description)
+		}
+	}
+
+	@Test
+	fun `no British spelling in the sources`() {
+		val british = Regex("""\b(colour|recognised|flavour|honour|behaviour|centre|licence)\b""", RegexOption.IGNORE_CASE)
+		val offenders = File("src/main").walkTopDown()
+			.filter { it.isFile && (it.extension == "kt" || it.extension == "yaml") }
+			.flatMap { file ->
+				file.readLines()
+					.filter { line -> british.containsMatchIn(line.replace("\"colour\"", "")) }
+					.map { "${file.name}: $it" }
+			}
+			.toList()
+		assertEquals(emptyList(), offenders)
 	}
 }

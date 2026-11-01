@@ -50,6 +50,8 @@ class UnicodeEscapesTest {
 	@Test
 	fun `round trips through every format`() {
 		val text = "Grüße, 世界 😀\n"
-		EscapeFormat.entries.forEach { assertEquals(text, UnicodeEscapes.decode(encode(text, it, escapeAscii = true)), it.name) }
+		EscapeFormat.entries.forEach {
+			assertEquals(text, UnicodeEscapes.decode(encode(text, it, escapeAscii = true)), it.name)
+		}
 	}
 }

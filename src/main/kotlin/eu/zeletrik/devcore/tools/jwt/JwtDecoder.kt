@@ -11,7 +11,17 @@ import java.time.format.DateTimeFormatter.ISO_INSTANT
 import java.time.temporal.ChronoUnit
 import java.util.Base64
 
-data class DecodedJwt(val header: String, val payload: String, val signature: String, val times: String, val status: String)
+data class DecodedJwt(
+	val header: String,
+	val payload: String,
+	val signature: String,
+	val times: String,
+	val status: String,
+)
+
+/** A signed JWT has three dot-separated parts; an encrypted one (JWE) has five. */
+internal const val JWS_PARTS = 3
+private const val JWE_PARTS = 5
 
 /** Decodes only — nothing here verifies a signature. */
 object JwtDecoder {
@@ -21,39 +31,46 @@ object JwtDecoder {
 
 	fun decode(text: String, now: Instant): DecodedJwt {
 		val parts = text.trim().replace(bearer, "").split('.')
-		if (parts.size == 5) throw IllegalArgumentException("Encrypted JWTs (JWE) are not supported")
-		if (parts.size != 3) throw IllegalArgumentException("Not a JWT: expected 3 dot-separated parts")
+		if (parts.size == JWE_PARTS) throw IllegalArgumentException("Encrypted JWTs (JWE) aren't supported")
+		if (parts.size != JWS_PARTS) throw IllegalArgumentException("Not a JWT: expected 3 dot-separated parts")
 		val (headerJson, _) = jsonObject(parts[0], "Header")
 		val (payloadJson, claims) = jsonObject(parts[1], "Payload")
 
-		val times = timeClaims.associateWith { claims.get(it)?.let(::instantOf) }
-		val exp = times["exp"]
-		val nbf = times["nbf"]
+		// A claim that is present but not a usable NumericDate is reported as such, never mistaken for an absent one.
+		val times = timeClaims.mapNotNull { claim -> claims.get(claim)?.let { claim to instantOf(it) } }
+		val exp = times.firstOrNull { it.first == "exp" }
+		val expiry = exp?.second
+		val nbf = times.firstOrNull { it.first == "nbf" }?.second
 		val status = when {
-			exp != null && !now.isBefore(exp) -> "Expired"
+			exp != null && expiry == null -> "Expiry not readable"
+			expiry != null && !now.isBefore(expiry) -> "Expired"
 			nbf != null && now.isBefore(nbf) -> "Not yet valid"
 			exp != null -> "Active"
 			else -> "No expiry"
 		}
-		val timeLines = times.mapNotNull { (claim, instant) ->
-			instant?.let { "$claim: ${ISO_INSTANT.format(it)} (${relativeTime(it, now)})" }
+		val timeLines = times.map { (claim, instant) ->
+			if (instant == null) {
+				"$claim: not readable"
+			} else {
+				"$claim: ${ISO_INSTANT.format(instant)} (${relativeTime(instant, now)})"
+			}
 		}
 		return DecodedJwt(headerJson, payloadJson, parts[2], timeLines.joinToString("\n"), status)
 	}
 
 	private fun jsonObject(part: String, name: String): Pair<String, JsonNode> {
-		val error = IllegalArgumentException("$name is not a base64url-encoded JSON object")
+		val message = "$name is not a base64url-encoded JSON object"
 		val json = try {
 			String(Base64.getUrlDecoder().decode(part), Charsets.UTF_8)
 		} catch (e: IllegalArgumentException) {
-			throw error
+			throw IllegalArgumentException(message, e)
 		}
 		val node = try {
 			mapper.readTree(json)
 		} catch (e: JacksonException) {
-			throw error
+			throw IllegalArgumentException(message, e)
 		}
-		if (node == null || !node.isObject) throw error
+		require(node != null && node.isObject) { message }
 		return JsonFormatter.format(json) to node
 	}
 

@@ -69,8 +69,11 @@ class GroupedNavBrowserlessTest : SpringBrowserlessTest() {
 		navigate(HashGeneratorView::class.java)
 		test(layout.star).click()
 		navigate(HomeView::class.java)
-		assertEquals(listOf("Favorites", "Recent") + categoryHeadings(Tool.sorted()), `$`(H2::class.java).all().map { it.text })
-		val hrefs = `$`(RouterLink::class.java).all().map { it.href }
+		assertEquals(
+			listOf("Favorites", "Recent") + categoryHeadings(Tool.sorted()),
+			`$`(H2::class.java).all().map { it.text },
+		)
+		val hrefs = `$view`(RouterLink::class.java).all().map { it.href }
 		assertEquals(3, hrefs.count { it == Tool.HASH.id })
 		assertEquals(listOf(Tool.HASH.id, Tool.BASE64.id), hrefs.filter { it.isNotEmpty() }.drop(1).take(2))
 	}

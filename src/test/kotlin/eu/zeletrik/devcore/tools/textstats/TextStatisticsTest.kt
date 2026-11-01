@@ -4,7 +4,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class TextStatisticsTest {
-	private fun stats(text: String) = TextStatistics.describe(text).lines().associate { it.substringBefore(": ") to it.substringAfter(": ").toInt() }
+	private fun stats(text: String) =
+		TextStatistics.describe(text).lines().associate { it.substringBefore(": ") to it.substringAfter(": ").toInt() }
 
 	@Test
 	fun counts() {

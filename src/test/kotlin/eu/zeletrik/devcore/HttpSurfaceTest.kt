@@ -41,7 +41,10 @@ class HttpSurfaceTest(@LocalServerPort private val port: Int) {
 	}
 }
 
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = ["vaadin.productionMode=true", "server.servlet.context-path=/devcore"])
+@SpringBootTest(
+	webEnvironment = RANDOM_PORT,
+	properties = ["vaadin.productionMode=true", "server.servlet.context-path=/devcore"],
+)
 class ContextPathTest(@LocalServerPort private val port: Int) {
 	@Test
 	fun `everything moves under the context path`() {

@@ -46,7 +46,11 @@ class ProxyAndCspHttpTest(@LocalServerPort private val port: Int) {
 	fun `every HTML page carries the policy, with self-only sources, no plugins and no framing limits`() {
 		listOf("/", "/base64", "/no-such-tool").forEach { path ->
 			val response = get(port, path)
-			assertEquals(ContentSecurityPolicyFilter.POLICY, response.headers().firstValue("Content-Security-Policy").orElse(""), path)
+			assertEquals(
+				ContentSecurityPolicyFilter.POLICY,
+				response.headers().firstValue("Content-Security-Policy").orElse(""),
+				path,
+			)
 			assertTrue(response.headers().firstValue("X-Frame-Options").isEmpty, path)
 		}
 		val policy = ContentSecurityPolicyFilter.POLICY
@@ -69,7 +73,7 @@ class ProxyAndCspHttpTest(@LocalServerPort private val port: Int) {
 	}
 
 	@Test
-	fun `forwarded headers are honoured from any client`() {
+	fun `forwarded headers are honored from any client`() {
 		val echo = get(port, "/test-echo", prefix, "X-Forwarded-Proto" to "https",
 			"X-Forwarded-Host" to "tools.example.com", "X-Forwarded-Port" to "8443").body()
 		assertEquals("https://tools.example.com:8443/tools/test-echo /tools", echo)

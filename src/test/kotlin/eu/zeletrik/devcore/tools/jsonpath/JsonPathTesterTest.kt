@@ -33,7 +33,11 @@ class JsonPathTesterTest {
 
 	@Test
 	fun errors() {
-		assertTrue(assertFailsWith<IllegalArgumentException> { JsonPathTester.evaluate("""{"a":""", "$") }.message!!.startsWith("Invalid JSON at line 1, column"))
+		assertTrue(
+			assertFailsWith<IllegalArgumentException> {
+				JsonPathTester.evaluate("""{"a":""", "$")
+			}.message!!.startsWith("Invalid JSON at line 1, column")
+		)
 		assertEquals("path", assertFailsWith<FieldError> { JsonPathTester.evaluate("""{"a":1}""", "$.[") }.field)
 	}
 }

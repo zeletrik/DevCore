@@ -16,7 +16,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class CodesTest {
-	private fun qr(content: String, level: ErrorCorrectionLevel = ErrorCorrectionLevel.M) = CodeImages.qr(QrCodes.encode(content, level))
+	private fun qr(content: String, level: ErrorCorrectionLevel = ErrorCorrectionLevel.M) =
+		CodeImages.qr(QrCodes.encode(content, level))
 
 	@Test
 	fun `QR decodes to the content at the chosen level, PNG and SVG alike`() {
@@ -34,8 +35,7 @@ class CodesTest {
 	fun `QR carries the UTF-8 bytes`() {
 		val result = decodePng(qr("Grüße 😀").png)
 		assertEquals("Grüße 😀", result.text)
-		@Suppress("UNCHECKED_CAST")
-		val segments = result.resultMetadata[ResultMetadataType.BYTE_SEGMENTS] as List<ByteArray>
+		val segments = (result.resultMetadata[ResultMetadataType.BYTE_SEGMENTS] as List<*>).map { it as ByteArray }
 		assertContentEquals("Grüße 😀".toByteArray(Charsets.UTF_8), segments.reduce(ByteArray::plus))
 	}
 
@@ -65,7 +65,10 @@ class CodesTest {
 		assertEquals("WIFI:T:WPA;S:home;P:secret;H:true;;", QrCodes.wifi("home", "secret", WifiSecurity.WPA, hidden = true))
 		assertEquals("WIFI:T:nopass;S:cafe;;", QrCodes.wifi("cafe", "", WifiSecurity.NONE, hidden = false))
 		assertTrue("T:WEP" in QrCodes.wifi("x", "y", WifiSecurity.WEP, hidden = false))
-		assertEquals("""WIFI:T:WPA;S:my\;net;P:a\\b\,c\:d\"e;;""", QrCodes.wifi("my;net", """a\b,c:d"e""", WifiSecurity.WPA, hidden = false))
+		assertEquals(
+			"""WIFI:T:WPA;S:my\;net;P:a\\b\,c\:d\"e;;""",
+			QrCodes.wifi("my;net", """a\b,c:d"e""", WifiSecurity.WPA, hidden = false),
+		)
 	}
 
 	@Test
@@ -88,9 +91,11 @@ class CodesTest {
 		assertEquals("WIFI:T:WPA;S:home;P:secret;;", decodePng(png).text)
 	}
 
-	private fun barcode(input: String, symbology: Symbology) = Barcodes.encode(input, symbology).let { (value, matrix) -> value to CodeImages.barcode(matrix) }
+	private fun barcode(input: String, symbology: Symbology) =
+		Barcodes.encode(input, symbology).let { (value, matrix) -> value to CodeImages.barcode(matrix) }
 
-	private fun error(input: String, symbology: Symbology) = assertFailsWith<IllegalArgumentException> { Barcodes.encode(input, symbology) }.message!!
+	private fun error(input: String, symbology: Symbology) =
+		assertFailsWith<IllegalArgumentException> { Barcodes.encode(input, symbology) }.message!!
 
 	@Test
 	fun `barcodes decode to the value, check digits included`() {

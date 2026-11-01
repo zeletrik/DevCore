@@ -20,9 +20,9 @@ import java.time.ZoneId
 @SpringComponent
 @UIScope
 class CronView : TextToolView<TextField>(Tool.CRON, textLine("Expression")) {
-	internal val flavour = RadioButtonGroup("Flavour", *CronFlavour.entries.toTypedArray()).apply {
+	internal val flavor = RadioButtonGroup("Flavor", *CronFlavor.entries.toTypedArray()).apply {
 		setItemLabelGenerator { it.label }
-		value = CronFlavour.UNIX
+		value = CronFlavor.UNIX
 		addValueChangeListener { recompute() }
 	}
 	internal val zone = zonePicker { recompute() }
@@ -31,7 +31,10 @@ class CronView : TextToolView<TextField>(Tool.CRON, textLine("Expression")) {
 
 	init {
 		add(
-			HorizontalLayout(flavour, zone).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true },
+			HorizontalLayout(flavor, zone).apply {
+				defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
+				isWrap = true
+			},
 			input,
 			description,
 			runs,
@@ -39,9 +42,9 @@ class CronView : TextToolView<TextField>(Tool.CRON, textLine("Expression")) {
 	}
 
 	override fun render(text: String) {
-		val schedule = CronFlavours.parse(text, flavour.value)
+		val schedule = CronFlavors.parse(text, flavor.value)
 		description.value = CronDescriber.describe(schedule)
-		runs.value = CronFlavours.nextRuns(schedule, Instant.now(), ZoneId.of(zone.value ?: "UTC"))
+		runs.value = CronFlavors.nextRuns(schedule, Instant.now(), ZoneId.of(zone.value ?: "UTC"))
 			.ifEmpty { listOf("No upcoming runs") }
 			.joinToString("\n")
 	}

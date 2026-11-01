@@ -2,7 +2,7 @@ package eu.zeletrik.devcore.tools.keys
 
 import com.vaadin.flow.component.orderedlayout.FlexComponent
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout
-import com.vaadin.flow.component.select.Select
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
 import com.vaadin.flow.spring.annotation.UIScope
@@ -14,13 +14,13 @@ import eu.zeletrik.devcore.shell.textLine
 import java.security.KeyPair
 
 /** Keys are generated on the DevCore server and live only in this UI session. */
+private const val MAX_COMMENT = 1_000
+
 @Route("key-pair-generator", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class KeyPairView : GeneratorView(Tool.KEY_PAIR) {
-	internal val algorithm = Select<KeyAlgorithm>().apply {
-		label = "Algorithm"
-		setItems(*KeyAlgorithm.entries.toTypedArray())
+	internal val algorithm = RadioButtonGroup("Algorithm", *KeyAlgorithm.entries.toTypedArray()).apply {
 		setItemLabelGenerator { it.label }
 		value = KeyAlgorithm.ED25519
 		addValueChangeListener { generate() }
@@ -33,7 +33,10 @@ class KeyPairView : GeneratorView(Tool.KEY_PAIR) {
 
 	init {
 		add(
-			HorizontalLayout(algorithm, comment, generateButton).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true },
+			HorizontalLayout(algorithm, comment, generateButton, generateError).apply {
+				defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
+				isWrap = true
+			},
 			privateKey,
 			publicKey,
 			openSsh,
@@ -41,6 +44,7 @@ class KeyPairView : GeneratorView(Tool.KEY_PAIR) {
 	}
 
 	override fun produce() {
+		if (!commentFits()) return
 		val generated = KeyPairs.generate(algorithm.value)
 		pair = generated
 		privateKey.value = KeyPairs.privatePem(generated)
@@ -49,6 +53,13 @@ class KeyPairView : GeneratorView(Tool.KEY_PAIR) {
 	}
 
 	private fun showOpenSsh() {
-		pair?.let { openSsh.value = KeyPairs.openSsh(it, comment.value) }
+		if (commentFits()) pair?.let { openSsh.value = KeyPairs.openSsh(it, comment.value) }
+	}
+
+	/** A comment longer than [MAX_COMMENT] is marked, and the keys and OpenSSH line stay as they are. */
+	private fun commentFits(): Boolean {
+		comment.isInvalid = comment.value.length > MAX_COMMENT
+		if (comment.isInvalid) comment.errorMessage = "At most 1,000 characters"
+		return !comment.isInvalid
 	}
 }

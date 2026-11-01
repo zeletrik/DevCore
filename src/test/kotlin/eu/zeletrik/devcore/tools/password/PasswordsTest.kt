@@ -15,7 +15,9 @@ class PasswordsTest {
 			CharSet.entries.forEach { set -> assertTrue(password.any { it in set.chars }, "${set.label} in $password") }
 		}
 		repeat(50) { assertTrue(Passwords.password(30, setOf(CharSet.DIGITS), false).all { it.isDigit() }) }
-		repeat(50) { assertTrue(Passwords.password(30, setOf(CharSet.SYMBOLS), false).all { it in "!#$%&()*+,-./:;<=>?@[]^_{|}~" }) }
+		repeat(50) {
+			assertTrue(Passwords.password(30, setOf(CharSet.SYMBOLS), false).all { it in "!#$%&()*+,-./:;<=>?@[]^_{|}~" })
+		}
 	}
 
 	@Test

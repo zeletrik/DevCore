@@ -27,7 +27,9 @@ class BasicAuthView : TextToolView<TextArea>(Tool.BASIC_AUTH, textArea("Header o
 	internal val header = OutputField("Header")
 	internal val decodedUsername = OutputField("Username")
 	internal val decodedPassword = OutputField("Password")
-	private val credentials = HorizontalLayout(username, password).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE }
+	private val credentials = HorizontalLayout(username, password).apply {
+		defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
+	}
 
 	init {
 		add(mode, credentials, input, header, decodedUsername, decodedPassword)
@@ -47,7 +49,8 @@ class BasicAuthView : TextToolView<TextArea>(Tool.BASIC_AUTH, textArea("Header o
 		this.mode.value = Mode.fromParam(mode)
 	}
 
-	override fun acceptsInputParam() = mode.value == Mode.DECODE
+	/** Never from a link: a Basic header is the password, and links end up in history and proxy logs. */
+	override fun acceptsInputParam() = false
 
 	override fun isEmpty() =
 		if (mode.value == Mode.ENCODE) username.value.isEmpty() && password.value.isEmpty() else input.value.isEmpty()

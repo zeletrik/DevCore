@@ -1,5 +1,6 @@
 package eu.zeletrik.devcore.tools.xml
 
+import eu.zeletrik.devcore.shell.BoundedWriter
 import eu.zeletrik.devcore.tools.json.Indent
 import java.io.StringReader
 import javax.xml.stream.XMLInputFactory
@@ -15,6 +16,8 @@ import javax.xml.stream.XMLStreamException
 import javax.xml.stream.XMLStreamReader
 
 /** Streams the document with DTDs off, so no entity is ever resolved and nothing outside the input is read. */
+private val BYTE_ORDER_MARK = Char(0xFEFF).toString()
+
 object XmlFormatter {
 	private val factory = XMLInputFactory.newFactory().apply {
 		setProperty(XMLInputFactory.SUPPORT_DTD, false)
@@ -26,72 +29,124 @@ object XmlFormatter {
 
 	private sealed interface Node
 
-	private class Element(val tag: String, val attributes: String, val children: MutableList<Node> = mutableListOf()) : Node
+	private class Element(
+		val tag: String,
+		val attributes: String,
+		val children: MutableList<Node> = mutableListOf(),
+	) : Node
 
 	/** Already-escaped markup; [inline] for text and CDATA, which may share a line with their element. */
-	private class Leaf(val markup: String, val inline: Boolean) : Node
+	private class Leaf(val markup: String, val inline: Boolean, val blank: Boolean = false) : Node
 
 	fun format(text: String, indent: Indent = Indent.TWO): String {
 		val nodes = try {
-			parse(factory.createXMLStreamReader(StringReader(text)))
+			TreeBuilder(factory.createXMLStreamReader(StringReader(text.removePrefix(BYTE_ORDER_MARK)))).build()
 		} catch (e: XMLStreamException) {
 			val reason = e.message?.substringAfter("Message: ")?.trim() ?: "not well-formed"
-			throw IllegalArgumentException(e.location?.let { "Invalid XML at line ${it.lineNumber}, column ${it.columnNumber}: $reason" } ?: "Invalid XML: $reason")
+			throw IllegalArgumentException(
+				e.location?.let {
+					"Invalid XML at line ${it.lineNumber}, column ${it.columnNumber}: $reason"
+				} ?: "Invalid XML: $reason",
+				e,
+			)
 		}
 		val pad = if (indent == Indent.MINIFIED) null else " ".repeat(indent.spaces)
-		return nodes.joinToString(if (pad == null) "" else "\n") { render(it, pad, 0) }
+		val out = BoundedWriter()
+		nodes.forEachIndexed { i, node ->
+			if (i > 0 && pad != null) out.append("\n")
+			render(node, pad, 0, out)
+		}
+		return out.toString()
 	}
 
-	private fun parse(reader: XMLStreamReader): List<Node> {
-		val top = mutableListOf<Node>()
-		reader.version?.let { version ->
+	/** Builds the node tree from the reader's events. */
+	private class TreeBuilder(private val reader: XMLStreamReader) {
+		private val top = mutableListOf<Node>()
+		private val open = ArrayDeque<Element>()
+
+		// The parser splits text at every entity and character reference; the pieces are joined before deciding anything.
+		private val text = StringBuilder()
+
+		fun build(): List<Node> {
+			declaration()?.let(top::add)
+			while (reader.hasNext()) {
+				val event = reader.next()
+				if (event == CHARACTERS || event == SPACE) {
+					text.append(reader.text)
+				} else {
+					flushText()
+					handle(event)
+				}
+			}
+			top.removeAll { it is Leaf && it.blank }
+			return top
+		}
+
+		private fun declaration(): Leaf? = reader.version?.let { version ->
 			val encoding = reader.characterEncodingScheme?.let { " encoding=\"$it\"" }.orEmpty()
 			val standalone = if (reader.standaloneSet()) " standalone=\"${if (reader.isStandalone) "yes" else "no"}\"" else ""
-			top += Leaf("<?xml version=\"$version\"$encoding$standalone?>", inline = false)
+			Leaf("<?xml version=\"$version\"$encoding$standalone?>", inline = false)
 		}
-		val open = ArrayDeque<Element>()
-		fun add(node: Node) = (open.lastOrNull()?.children ?: top).add(node)
-		while (reader.hasNext()) {
-			when (reader.next()) {
-				DTD -> throw IllegalArgumentException("DTDs are not supported")
-				START_ELEMENT -> Element(name(reader.prefix, reader.localName), attributes(reader)).also { add(it); open.addLast(it) }
-				END_ELEMENT -> open.removeLast()
-				CHARACTERS, SPACE -> if (!reader.isWhiteSpace) add(Leaf(escape(reader.text, attribute = false), inline = true))
+
+		private fun add(node: Node) = (open.lastOrNull()?.children ?: top).add(node)
+
+		private fun flushText() {
+			if (text.isEmpty()) return
+			add(Leaf(escape(text.toString(), attribute = false), inline = true, blank = text.isBlank()))
+			text.clear()
+		}
+
+		private fun handle(event: Int) {
+			when (event) {
+				DTD -> throw IllegalArgumentException("DTDs aren't supported")
+				START_ELEMENT -> Element(name(reader.prefix, reader.localName), attributes()).also { add(it); open.addLast(it) }
+				// Whitespace-only text is layout only between child elements; on its own (`<sep> </sep>`) it is the value.
+				END_ELEMENT -> open.removeLast().children.let { children ->
+					if (children.any { it is Element }) children.removeAll { it is Leaf && it.blank }
+				}
 				CDATA -> add(Leaf("<![CDATA[${reader.text}]]>", inline = true))
 				COMMENT -> add(Leaf("<!--${reader.text}-->", inline = false))
-				PROCESSING_INSTRUCTION -> add(Leaf("<?${reader.piTarget}${reader.piData?.let { " $it" }.orEmpty()}?>", inline = false))
+				PROCESSING_INSTRUCTION ->
+					add(Leaf("<?${reader.piTarget}${reader.piData?.let { " $it" }.orEmpty()}?>", inline = false))
 			}
 		}
-		return top
-	}
 
-	/** Namespace declarations first, then attributes in document order. */
-	private fun attributes(reader: XMLStreamReader) = buildString {
-		for (i in 0 until reader.namespaceCount) {
-			val prefix = reader.getNamespacePrefix(i)
-			append(" xmlns").append(if (prefix.isNullOrEmpty()) "" else ":$prefix")
-			append("=\"").append(escape(reader.getNamespaceURI(i), attribute = true)).append('"')
-		}
-		for (i in 0 until reader.attributeCount) {
-			append(' ').append(name(reader.getAttributePrefix(i), reader.getAttributeLocalName(i)))
-			append("=\"").append(escape(reader.getAttributeValue(i), attribute = true)).append('"')
+		/** Namespace declarations first, then attributes in document order. */
+		private fun attributes() = buildString {
+			for (i in 0 until reader.namespaceCount) {
+				val prefix = reader.getNamespacePrefix(i)
+				append(" xmlns").append(if (prefix.isNullOrEmpty()) "" else ":$prefix")
+				append("=\"").append(escape(reader.getNamespaceURI(i), attribute = true)).append('"')
+			}
+			for (i in 0 until reader.attributeCount) {
+				append(' ').append(name(reader.getAttributePrefix(i), reader.getAttributeLocalName(i)))
+				append("=\"").append(escape(reader.getAttributeValue(i), attribute = true)).append('"')
+			}
 		}
 	}
 
 	private fun name(prefix: String?, local: String) = if (prefix.isNullOrEmpty()) local else "$prefix:$local"
 
-	private fun render(node: Node, pad: String?, depth: Int): String {
+	/** Writes [node] into [out], which enforces the output cap while the text grows. */
+	private fun render(node: Node, pad: String?, depth: Int, out: Appendable) {
 		val indent = pad?.repeat(depth).orEmpty()
-		return when (node) {
-			is Leaf -> indent + node.markup
+		when (node) {
+			is Leaf -> out.append(indent).append(node.markup)
 			is Element -> when {
-				node.children.isEmpty() -> "$indent<${node.tag}${node.attributes}/>"
-				node.children.all { it is Leaf && it.inline } ->
-					"$indent<${node.tag}${node.attributes}>${node.children.joinToString("") { (it as Leaf).markup }}</${node.tag}>"
+				node.children.isEmpty() -> out.append(indent).append('<').append(node.tag).append(node.attributes).append("/>")
+				node.children.all { it is Leaf && it.inline } -> {
+					out.append(indent).append('<').append(node.tag).append(node.attributes).append('>')
+					node.children.forEach { out.append((it as Leaf).markup) }
+					out.append("</").append(node.tag).append('>')
+				}
 				else -> {
-					val inner = node.children.joinToString(if (pad == null) "" else "\n") { render(it, pad, depth + 1) }
 					val newline = if (pad == null) "" else "\n"
-					"$indent<${node.tag}${node.attributes}>$newline$inner$newline$indent</${node.tag}>"
+					out.append(indent).append('<').append(node.tag).append(node.attributes).append('>').append(newline)
+					node.children.forEachIndexed { i, child ->
+						if (i > 0) out.append(newline)
+						render(child, pad, depth + 1, out)
+					}
+					out.append(newline).append(indent).append("</").append(node.tag).append('>')
 				}
 			}
 		}
@@ -104,6 +159,10 @@ object XmlFormatter {
 				c == '<' -> append("&lt;")
 				c == '>' -> append("&gt;")
 				c == '"' && attribute -> append("&quot;")
+				// Parsers normalize raw whitespace inside attribute values, so these must stay character references.
+				c == '\n' && attribute -> append("&#10;")
+				c == '\r' && attribute -> append("&#13;")
+				c == '\t' && attribute -> append("&#9;")
 				else -> append(c)
 			}
 		}

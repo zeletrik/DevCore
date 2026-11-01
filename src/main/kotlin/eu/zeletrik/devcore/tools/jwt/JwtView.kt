@@ -3,7 +3,7 @@ package eu.zeletrik.devcore.tools.jwt
 import com.vaadin.flow.component.html.Span
 import com.vaadin.flow.component.orderedlayout.FlexComponent
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout
-import com.vaadin.flow.component.select.Select
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup
 import com.vaadin.flow.component.textfield.TextArea
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
@@ -24,7 +24,7 @@ import java.time.Instant
 @UIScope
 class JwtView : TextToolView<TextArea>(Tool.JWT, textArea("JWT")) {
 	private val texts = mutableMapOf<Mode, String>()
-	internal val mode = modeGroup().apply {
+	internal val mode = modeGroup(decodeFirst = true).apply {
 		value = Mode.DECODE
 		addValueChangeListener {
 			// Each mode keeps its own text, so a token never ends up parsed as a payload.
@@ -34,14 +34,14 @@ class JwtView : TextToolView<TextArea>(Tool.JWT, textArea("JWT")) {
 			recompute()
 		}
 	}
-	internal val algorithm = Select<JwtAlgorithm>().apply {
-		label = "Algorithm"
-		setItems(*JwtAlgorithm.entries.toTypedArray())
+	internal val algorithm = RadioButtonGroup("Algorithm", *JwtAlgorithm.entries.toTypedArray()).apply {
 		value = JwtAlgorithm.HS256
 		isVisible = false
 		addValueChangeListener { recompute() }
 	}
-	internal val secret = field(textLine("Secret"), "secret").apply { helperText = "Optional: checks HS256, HS384 and HS512 signatures" }
+	internal val secret = field(textLine("Secret"), "secret").apply {
+		helperText = "Optional: checks HS256, HS384 and HS512 signatures"
+	}
 	internal val notice = Span().apply { isVisible = false }
 	internal val status = OutputField("Status")
 	internal val times = OutputField("Time claims")
@@ -76,7 +76,11 @@ class JwtView : TextToolView<TextArea>(Tool.JWT, textArea("JWT")) {
 			return
 		}
 		val jwt = JwtDecoder.decode(text, Instant.now())
-		notice.text = if (secret.value.isEmpty()) "Signature not verified — enter the secret to check it." else JwtSigner.check(text, secret.value)
+		notice.text = if (secret.value.isEmpty()) {
+			"Signature not verified — enter the secret to check it"
+		} else {
+			JwtSigner.check(text, secret.value)
+		}
 		notice.isVisible = true
 		status.value = jwt.status
 		times.value = jwt.times

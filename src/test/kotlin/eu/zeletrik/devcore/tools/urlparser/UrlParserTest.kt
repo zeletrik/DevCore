@@ -9,7 +9,8 @@ import kotlin.test.assertTrue
 class UrlParserTest {
 	private fun lines(url: String) = UrlParser.describe(url).lines()
 
-	private fun fields(url: String) = lines(url).filter { !it.startsWith("  ") && ": " in it }.associate { it.substringBefore(": ") to it.substringAfter(": ") }
+	private fun fields(url: String) = lines(url).filter { !it.startsWith("  ") && ": " in it }
+		.associate { it.substringBefore(": ") to it.substringAfter(": ") }
 
 	@Test
 	fun components() {
@@ -42,7 +43,14 @@ class UrlParserTest {
 
 	@Test
 	fun errors() {
-		assertEquals("Not an absolute URL (it needs a scheme like https://)", assertFailsWith<IllegalArgumentException> { UrlParser.describe("example.com/x") }.message)
-		assertTrue(assertFailsWith<IllegalArgumentException> { UrlParser.describe("https://exa mple.com/") }.message!!.startsWith("Not a valid URL: "))
+		assertEquals(
+			"Not an absolute URL (it needs a scheme like https://)",
+			assertFailsWith<IllegalArgumentException> { UrlParser.describe("example.com/x") }.message,
+		)
+		assertTrue(
+			assertFailsWith<IllegalArgumentException> {
+				UrlParser.describe("https://exa mple.com/")
+			}.message!!.startsWith("Not a valid URL: ")
+		)
 	}
 }

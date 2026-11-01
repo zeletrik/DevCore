@@ -39,13 +39,18 @@ class XmlFormatterTest {
 
 	@Test
 	fun `any DTD is refused before an entity could be resolved, read or expanded`() {
-		assertEquals("DTDs are not supported", error("<!DOCTYPE x [<!ENTITY a \"b\">]><x>&a;</x>"))
-		assertEquals("DTDs are not supported", error("<!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/hostname\">]><x>&e;</x>"))
-		val laughs = "<!DOCTYPE l [<!ENTITY l0 \"ha\">" + (1..9).joinToString("") { "<!ENTITY l$it \"" + "&l${it - 1};".repeat(10) + "\">" } + "]><l>&l9;</l>"
-		assertEquals("DTDs are not supported", error(laughs))
+		assertEquals("DTDs aren't supported", error("<!DOCTYPE x [<!ENTITY a \"b\">]><x>&a;</x>"))
+		assertEquals("DTDs aren't supported", error("<!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/hostname\">]><x>&e;</x>"))
+		val laughs = "<!DOCTYPE l [<!ENTITY l0 \"ha\">" + (1..9).joinToString("") {
+			"<!ENTITY l$it \"" + "&l${it - 1};".repeat(10) + "\">"
+		} + "]><l>&l9;</l>"
+		assertEquals("DTDs aren't supported", error(laughs))
 		ServerSocket(0).use { server ->
 			server.soTimeout = 300
-			assertEquals("DTDs are not supported", error("<!DOCTYPE x [<!ENTITY e SYSTEM \"http://127.0.0.1:${server.localPort}/x\">]><x>&e;</x>"))
+			assertEquals(
+				"DTDs aren't supported",
+				error("<!DOCTYPE x [<!ENTITY e SYSTEM \"http://127.0.0.1:${server.localPort}/x\">]><x>&e;</x>"),
+			)
 			assertFailsWith<SocketTimeoutException> { server.accept() }
 		}
 	}

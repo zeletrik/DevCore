@@ -22,10 +22,17 @@ object JwtSigner {
 	fun check(token: String, secret: String): String {
 		val parts = token.trim().replace(bearer, "").split('.')
 		val alg = runCatching { mapper.readTree(Base64.getUrlDecoder().decode(parts[0])).get("alg")?.asString() }.getOrNull()
-		val algorithm = JwtAlgorithm.entries.firstOrNull { it.name == alg } ?: return UNSUPPORTED
-		val actual = runCatching { Base64.getUrlDecoder().decode(parts[2]) }.getOrNull() ?: return "Signature invalid"
-		val expected = mac(algorithm, secret, "${parts[0]}.${parts[1]}")
-		return if (MessageDigest.isEqual(expected, actual)) "Signature valid" else "Signature invalid"
+		val algorithm = JwtAlgorithm.entries.firstOrNull { it.name == alg }
+		val valid = algorithm != null && parts.size == JWS_PARTS && run {
+			// Compared as text: a decoder ignores the spare bits of the last character, so different strings can decode alike.
+			val expected = encoder.encodeToString(mac(algorithm, secret, "${parts[0]}.${parts[1]}"))
+			MessageDigest.isEqual(expected.toByteArray(), parts[2].trimEnd('=').toByteArray())
+		}
+		return when {
+			algorithm == null -> UNSUPPORTED
+			valid -> "Signature valid"
+			else -> "Signature invalid"
+		}
 	}
 
 	/** Header `{"alg":…,"typ":"JWT"}`, the payload minified without touching its numbers or member order. */

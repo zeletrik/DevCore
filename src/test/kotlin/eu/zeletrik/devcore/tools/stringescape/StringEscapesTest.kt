@@ -7,29 +7,29 @@ import kotlin.test.assertFailsWith
 class StringEscapesTest {
 	private val bs = "\\"
 
-	private fun invalidAt(position: Int, text: String, flavour: Flavour = Flavour.JSON) {
-		val e = assertFailsWith<IllegalArgumentException> { StringEscapes.unescape(text, flavour) }
+	private fun invalidAt(position: Int, text: String, flavor: Flavor = Flavor.JSON) {
+		val e = assertFailsWith<IllegalArgumentException> { StringEscapes.unescape(text, flavor) }
 		assertEquals("Invalid escape sequence at position $position", e.message)
 	}
 
 	@Test
-	fun `escape per flavour`() {
-		assertEquals("""He said \"hi\" \\ it's\n\té""", StringEscapes.escape("He said \"hi\" \\ it's\n\té", Flavour.JSON))
-		assertEquals("""it\'s \"x\"""", StringEscapes.escape("it's \"x\"", Flavour.JAVASCRIPT))
-		assertEquals("""it's \"x\"""", StringEscapes.escape("it's \"x\"", Flavour.JAVA))
+	fun `escape per flavor`() {
+		assertEquals("""He said \"hi\" \\ it's\n\té""", StringEscapes.escape("He said \"hi\" \\ it's\n\té", Flavor.JSON))
+		assertEquals("""it\'s \"x\"""", StringEscapes.escape("it's \"x\"", Flavor.JAVASCRIPT))
+		assertEquals("""it's \"x\"""", StringEscapes.escape("it's \"x\"", Flavor.JAVA))
 	}
 
 	@Test
 	fun `control characters use short forms where they exist, else four hex digits`() {
 		val input = "${Char(1)}\r\b${Char(12)}"
-		assertEquals(bs + "u0001" + """\r\b\f""", StringEscapes.escape(input, Flavour.JSON))
+		assertEquals(bs + "u0001" + """\r\b\f""", StringEscapes.escape(input, Flavor.JSON))
 	}
 
 	@Test
-	fun `unescape per flavour`() {
+	fun `unescape per flavor`() {
 		val json = """a\"b\\c\/d""" + bs + "u00E9" + """\n"""
-		assertEquals("a\"b\\c/dé\n", StringEscapes.unescape(json, Flavour.JSON))
-		assertEquals("it's", StringEscapes.unescape("""it\'s""", Flavour.JAVASCRIPT))
+		assertEquals("a\"b\\c/dé\n", StringEscapes.unescape(json, Flavor.JSON))
+		assertEquals("it's", StringEscapes.unescape("""it\'s""", Flavor.JAVASCRIPT))
 	}
 
 	@Test
@@ -42,8 +42,8 @@ class StringEscapesTest {
 	}
 
 	@Test
-	fun `escape then unescape round-trips in every flavour`() {
+	fun `escape then unescape round-trips in every flavor`() {
 		val text = "a\"b'c\\d\n\t\r\b${Char(12)}${Char(1)}é😀/"
-		Flavour.entries.forEach { assertEquals(text, StringEscapes.unescape(StringEscapes.escape(text, it), it), it.name) }
+		Flavor.entries.forEach { assertEquals(text, StringEscapes.unescape(StringEscapes.escape(text, it), it), it.name) }
 	}
 }

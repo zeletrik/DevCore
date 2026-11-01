@@ -40,9 +40,21 @@ class PasswordHashingView : TextToolView<PasswordField>(Tool.PASSWORD_HASHING, s
 		value = HashAlgorithm.BCRYPT
 		addValueChangeListener { showFields(); recompute() }
 	}
-	internal val cost = numberField("Cost", 4..PasswordHashes.MAX_BCRYPT_COST, 10).apply { addValueChangeListener { recompute() } }
-	internal val memory = numberField("Memory (KiB)", 8192..PasswordHashes.MAX_ARGON2_MEMORY_KIB, 19_456).apply { addValueChangeListener { recompute() } }
-	internal val iterations = numberField("Iterations", 1..PasswordHashes.MAX_ARGON2_ITERATIONS, 2).apply { addValueChangeListener { recompute() } }
+	internal val cost = numberField(
+		"Cost",
+		PasswordHashes.bcryptCosts,
+		10,
+	).apply { addValueChangeListener { recompute() } }
+	internal val memory = numberField(
+		"Memory (KiB)",
+		8192..PasswordHashes.MAX_ARGON2_MEMORY_KIB,
+		19_456,
+	).apply { addValueChangeListener { recompute() } }
+	internal val iterations = numberField(
+		"Iterations",
+		1..PasswordHashes.MAX_ARGON2_ITERATIONS,
+		2,
+	).apply { addValueChangeListener { recompute() } }
 	internal val hash = field(textLine("Hash"), "hash").apply { isVisible = false }
 	internal val output = OutputField("Hash")
 	internal val result = Span()
@@ -78,15 +90,19 @@ class PasswordHashingView : TextToolView<PasswordField>(Tool.PASSWORD_HASHING, s
 	override fun render(text: String) {
 		if (mode.value == HashMode.VERIFY) {
 			result.text = if (PasswordHashes.verify(text, hash.value)) "Match" else "No match"
-			return
+		} else {
+			val hashed = hash(text)
+			if (hashed == null) keepOutputUnlessInputsChanged() else output.value = hashed
 		}
-		output.value = when (algorithm.value) {
-			HashAlgorithm.BCRYPT -> PasswordHashes.bcrypt(text, boundedInt(cost, 4..PasswordHashes.MAX_BCRYPT_COST) ?: return)
-			else -> {
-				val m = boundedInt(memory, 8192..PasswordHashes.MAX_ARGON2_MEMORY_KIB) ?: return
-				val t = boundedInt(iterations, 1..PasswordHashes.MAX_ARGON2_ITERATIONS) ?: return
-				PasswordHashes.argon2id(text, m, t)
-			}
+	}
+
+	/** A new hash of [text], or null while a cost field is invalid (every invalid one is marked). */
+	private fun hash(text: String): String? = when (algorithm.value) {
+		HashAlgorithm.BCRYPT -> boundedInt(cost, PasswordHashes.bcryptCosts)?.let { PasswordHashes.bcrypt(text, it) }
+		else -> {
+			val m = boundedInt(memory, 8192..PasswordHashes.MAX_ARGON2_MEMORY_KIB)
+			val t = boundedInt(iterations, 1..PasswordHashes.MAX_ARGON2_ITERATIONS)
+			if (m != null && t != null) PasswordHashes.argon2id(text, m, t) else null
 		}
 	}
 

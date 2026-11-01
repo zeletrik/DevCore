@@ -29,6 +29,7 @@ class UuidGeneratorView : ToolView(Tool.UUID) {
 		addValueChangeListener {
 			val uuid = it.value != IdVersion.ULID
 			uppercase.isEnabled = uuid
+			output.relabel(if (uuid) "UUIDs" else "ULIDs")
 			hyphens.isEnabled = uuid
 			generate()
 		}

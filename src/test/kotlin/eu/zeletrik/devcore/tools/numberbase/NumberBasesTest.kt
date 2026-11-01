@@ -5,9 +5,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class NumberBasesTest {
-	private fun convert(text: String, base: InputBase = InputBase.AUTO, uppercase: Boolean = false) = NumberBases.convert(text, base, uppercase)
+	private fun convert(text: String, base: InputBase = InputBase.AUTO, uppercase: Boolean = false) =
+		NumberBases.convert(text, base, uppercase)
 
-	private fun error(text: String, base: InputBase) = assertFailsWith<IllegalArgumentException> { convert(text, base) }.message
+	private fun error(text: String, base: InputBase) =
+		assertFailsWith<IllegalArgumentException> { convert(text, base) }.message
 
 	@Test
 	fun `all bases, any size, sign kept`() {

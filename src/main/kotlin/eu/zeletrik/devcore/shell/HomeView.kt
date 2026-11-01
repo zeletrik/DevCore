@@ -3,6 +3,7 @@ package eu.zeletrik.devcore.shell
 import com.vaadin.flow.component.card.Card
 import com.vaadin.flow.component.html.Div
 import com.vaadin.flow.component.html.H2
+import com.vaadin.flow.component.html.Paragraph
 import com.vaadin.flow.component.html.Span
 import com.vaadin.flow.component.orderedlayout.VerticalLayout
 import com.vaadin.flow.router.PageTitle
@@ -13,6 +14,7 @@ import com.vaadin.flow.router.RouterLink
 @PageTitle("DevCore")
 class HomeView(favorites: Favorites, recents: Recents, catalog: ToolCatalog) : VerticalLayout() {
 	init {
+		add(Paragraph(Project.INTRO).apply { style.set("margin", "0").set("color", "var(--vaadin-text-color-secondary)") })
 		val tools = catalog.visible
 		val starred = tools.filter { it in favorites }
 		if (starred.isNotEmpty()) add(H2("Favorites"), cards(starred))

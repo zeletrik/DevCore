@@ -9,7 +9,8 @@ enum class Case(val label: String) {
 object CaseConverter {
 	// Lower-case letter or digit → upper-case letter, and before the last capital of an acronym (HTTPServer).
 	private val boundary = Regex("(?<=[\\p{Ll}\\p{N}])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}\\p{Ll})")
-	private val separator = Regex("[^\\p{L}\\p{N}]+")
+	// Combining marks (U+0301 in a decomposed é, Devanagari vowel signs) are part of a word, not separators.
+	private val separator = Regex("[^\\p{L}\\p{M}\\p{N}]+")
 
 	fun words(line: String): List<String> =
 		line.split(separator).filter { it.isNotEmpty() }.flatMap { it.split(boundary) }.map { it.lowercase() }

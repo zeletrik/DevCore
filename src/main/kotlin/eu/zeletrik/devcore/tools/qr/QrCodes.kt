@@ -7,7 +7,9 @@ import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 
-enum class WifiSecurity(val label: String, val code: String) { WPA("WPA/WPA2/WPA3", "WPA"), WEP("WEP", "WEP"), NONE("None", "nopass") }
+enum class WifiSecurity(val label: String, val code: String) {
+	WPA("WPA/WPA2/WPA3", "WPA"), WEP("WEP", "WEP"), NONE("None", "nopass")
+}
 
 object QrCodes {
 	/** The de facto `WIFI:` payload; `\ ; , : "` are backslash-escaped. */
@@ -20,7 +22,11 @@ object QrCodes {
 
 	/** The text as UTF-8 bytes; the matrix has no margin, the renderer adds the quiet zone. */
 	fun encode(content: String, level: ErrorCorrectionLevel): BitMatrix = try {
-		val hints = mapOf(EncodeHintType.CHARACTER_SET to "UTF-8", EncodeHintType.ERROR_CORRECTION to level, EncodeHintType.MARGIN to 0)
+		val hints = mapOf(
+			EncodeHintType.CHARACTER_SET to "UTF-8",
+			EncodeHintType.ERROR_CORRECTION to level,
+			EncodeHintType.MARGIN to 0,
+		)
 		QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, 0, 0, hints)
 	} catch (_: WriterException) {
 		throw IllegalArgumentException("Too much data for a QR code at error correction level $level")

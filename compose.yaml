@@ -3,8 +3,10 @@ services:
     image: ghcr.io/zeletrik/devcore:latest
     ports:
       - "8080:8080"
+      # Behind a reverse proxy on this host, publish on loopback only instead:
+      # - "127.0.0.1:8080:8080"
     restart: unless-stopped
     # environment:
-    #   DEVCORE_TOOLS_HIDDEN: lorem-ipsum,nato-alphabet
+    #   DEVCORE_TOOLS_HIDDEN: lorem-ipsum-generator,nato-alphabet
     #   DEVCORE_FAVORITES_DEFAULT: json-formatter,base64
     #   SERVER_SERVLET_CONTEXT_PATH: /devcore

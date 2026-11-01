@@ -20,7 +20,14 @@ class PasswordHashesTest {
 		val salt = ByteArray(16) { it.toByte() }
 		val out = ByteArray(32)
 		Argon2BytesGenerator().apply {
-			init(Argon2Parameters.Builder(type).withVersion(19).withMemoryAsKB(m).withIterations(t).withParallelism(p).withSalt(salt).build())
+			init(
+				Argon2Parameters.Builder(type).withVersion(19)
+					.withMemoryAsKB(m)
+					.withIterations(t)
+					.withParallelism(p)
+					.withSalt(salt)
+					.build()
+			)
 		}.generateBytes(password.toByteArray(), out)
 		return "\$argon2$variant\$v=19\$m=$m,t=$t,p=$p\$${b64.encodeToString(salt)}\$${b64.encodeToString(out)}"
 	}
@@ -44,8 +51,14 @@ class PasswordHashesTest {
 	fun `bcrypt counts UTF-8 bytes up to 72`() {
 		PasswordHashes.bcrypt("a".repeat(71), 4)
 		PasswordHashes.bcrypt("a".repeat(72), 4)
-		assertEquals("bcrypt uses at most 72 bytes; this password has 73", assertFailsWith<IllegalArgumentException> { PasswordHashes.bcrypt("a".repeat(73), 4) }.message)
-		assertEquals("bcrypt uses at most 72 bytes; this password has 74", assertFailsWith<IllegalArgumentException> { PasswordHashes.bcrypt("é".repeat(37), 4) }.message)
+		assertEquals(
+			"bcrypt uses at most 72 bytes; this password has 73",
+			assertFailsWith<IllegalArgumentException> { PasswordHashes.bcrypt("a".repeat(73), 4) }.message,
+		)
+		assertEquals(
+			"bcrypt uses at most 72 bytes; this password has 74",
+			assertFailsWith<IllegalArgumentException> { PasswordHashes.bcrypt("é".repeat(37), 4) }.message,
+		)
 	}
 
 	@Test
@@ -71,7 +84,11 @@ class PasswordHashesTest {
 			assertTrue(PasswordHashes.verify("hunter2", hash), version)
 			assertFalse(PasswordHashes.verify("hunter3", hash), version)
 		}
-		mapOf("id" to Argon2Parameters.ARGON2_id, "i" to Argon2Parameters.ARGON2_i, "d" to Argon2Parameters.ARGON2_d).forEach { (variant, type) ->
+		mapOf(
+			"id" to Argon2Parameters.ARGON2_id,
+			"i" to Argon2Parameters.ARGON2_i,
+			"d" to Argon2Parameters.ARGON2_d,
+		).forEach { (variant, type) ->
 			assertTrue(PasswordHashes.verify("hunter2", argon2(variant, type, "hunter2", 8192, 1, 1)), variant)
 		}
 		assertTrue(PasswordHashes.verify("hunter2", argon2("id", Argon2Parameters.ARGON2_id, "hunter2", 4096, 1, 4)))
@@ -89,10 +106,22 @@ class PasswordHashesTest {
 		val started = System.nanoTime()
 		rejects(tooCostly, "\$2b\$15\$" + "a".repeat(53))
 		rejects(tooCostly, "\$2b\$31\$" + "a".repeat(53))
-		rejects(tooCostly, "\$argon2id\$v=19\$m=65537,t=1,p=1\$AAAAAAAAAAAAAAAAAAAAAA\$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-		rejects(tooCostly, "\$argon2id\$v=19\$m=8192,t=11,p=1\$AAAAAAAAAAAAAAAAAAAAAA\$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+		rejects(
+			tooCostly,
+			"\$argon2id\$v=19\$m=65537,t=1,p=1\$AAAAAAAAAAAAAAAAAAAAAA\$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+		)
+		rejects(
+			tooCostly,
+			"\$argon2id\$v=19\$m=8192,t=11,p=1\$AAAAAAAAAAAAAAAAAAAAAA\$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+		)
 		assertTrue(System.nanoTime() - started < 500_000_000L)
-		listOf("\$1\$abc\$def", "5f4dcc3b5aa765d61d8327deb882cf99", "\$2b\$03\$" + "a".repeat(53), "\$2b\$10\$short", "\$argon2id\$v=19\$m=x").forEach {
+		listOf(
+			"\$1\$abc\$def",
+			"5f4dcc3b5aa765d61d8327deb882cf99",
+			"\$2b\$03\$" + "a".repeat(53),
+			"\$2b\$10\$short",
+			"\$argon2id\$v=19\$m=x",
+		).forEach {
 			rejects("Not a bcrypt or Argon2 hash", it)
 		}
 	}

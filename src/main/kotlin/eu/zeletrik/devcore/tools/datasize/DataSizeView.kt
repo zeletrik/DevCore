@@ -27,7 +27,13 @@ class DataSizeView : TextToolView<TextField>(Tool.DATA_SIZE, textLine("Value")) 
 	internal val output = OutputField("In every unit")
 
 	init {
-		add(HorizontalLayout(input, unit).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; setWidthFull() }, output)
+		add(
+			HorizontalLayout(input, unit).apply {
+				defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
+				setWidthFull()
+			},
+			output,
+		)
 	}
 
 	override fun render(text: String) {

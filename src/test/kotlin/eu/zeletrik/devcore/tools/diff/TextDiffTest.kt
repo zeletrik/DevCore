@@ -8,7 +8,13 @@ import kotlin.test.assertFailsWith
 class TextDiffTest {
 	private val minus = Char(0x2212)
 
-	private fun diff(a: String, b: String, context: Int = 3, ignoreCase: Boolean = false, ignoreWhitespace: Boolean = false) =
+	private fun diff(
+		a: String,
+		b: String,
+		context: Int = 3,
+		ignoreCase: Boolean = false,
+		ignoreWhitespace: Boolean = false,
+	) =
 		TextDiff.diff(a, b, context, ignoreCase, ignoreWhitespace)
 
 	private val fifty = (1..50).joinToString("\n") { "L$it" }
@@ -35,7 +41,7 @@ class TextDiffTest {
 	}
 
 	@Test
-	fun `ignore options compare normalised lines but show them as written`() {
+	fun `ignore options compare normalized lines but show them as written`() {
 		assertEquals("No differences", diff("Hello", "hello", ignoreCase = true).status)
 		assertEquals("No differences", diff("a b ", " a b", ignoreWhitespace = true).status)
 		val shown = diff("Foo Bar", "Baz", ignoreCase = true, ignoreWhitespace = true).unified.lines()

@@ -20,7 +20,7 @@ class ShellBrowserlessTest : SpringBrowserlessTest() {
 	@Test
 	fun `home lists every tool as a link, by category then name`() {
 		navigate(HomeView::class.java)
-		val hrefs = `$`(RouterLink::class.java).all().map { it.href }.filter { it.isNotEmpty() }
+		val hrefs = `$view`(RouterLink::class.java).all().map { it.href }.filter { it.isNotEmpty() }
 		val expected = Category.sorted().flatMap { category -> Tool.sorted().filter { it.category == category } }
 		assertEquals(expected.map { it.id }, hrefs)
 		assertEquals(categoryHeadings(Tool.sorted()), `$`(H2::class.java).all().map { it.text })
@@ -60,8 +60,8 @@ class ShellBrowserlessTest : SpringBrowserlessTest() {
 	@Test
 	fun `every tool page opens with its description`() {
 		Tool.entries.forEach { tool ->
-			@Suppress("UNCHECKED_CAST")
-			val view = navigate(tool.view as Class<ToolView>)
+			UI.getCurrent().navigate(tool.view)
+			val view = currentView as ToolView
 			assertEquals(tool.description, view.intro.text, tool.id)
 			assertEquals(view.intro, view.children.findFirst().get(), tool.id)
 		}
@@ -77,7 +77,7 @@ class ShellBrowserlessTest : SpringBrowserlessTest() {
 			assertEquals("3", card.subtitle.style.get("-webkit-line-clamp"))
 			assertEquals("3lh", card.subtitle.style.get("height"))
 		}
-		val link = `$`(RouterLink::class.java).all().single { it.href == Tool.BASE64.id }
+		val link = `$view`(RouterLink::class.java).all().single { it.href == Tool.BASE64.id }
 		assertEquals("${Tool.BASE64.title}: ${Tool.BASE64.description}", link.element.getAttribute("title"))
 	}
 

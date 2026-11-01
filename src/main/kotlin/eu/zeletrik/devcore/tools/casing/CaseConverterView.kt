@@ -21,7 +21,8 @@ class CaseConverterView : TextToolView<TextArea>(Tool.CASE_CONVERTER, textArea("
 		outputs.values.forEach(::add)
 	}
 
-	override fun render(text: String) = outputs.forEach { (case, field) -> field.value = CaseConverter.convert(text, case) }
+	override fun render(text: String) =
+		outputs.forEach { (case, field) -> field.value = CaseConverter.convert(text, case) }
 
 	override fun clearOutputs() = outputs.values.forEach { it.clear() }
 }

@@ -10,9 +10,16 @@ class MarkdownToHtmlTest {
 		val html = MarkdownToHtml.convert("# Title\n\nSome **bold** text")
 		assertTrue("<h1>Title</h1>" in html && "<p>Some <strong>bold</strong> text</p>" in html)
 		val table = MarkdownToHtml.convert("| a | b |\n|---|---|\n| 1 | 2 |")
-		assertTrue(Regex("<table>.*<th>a</th>.*<th>b</th>.*<td>1</td>.*<td>2</td>.*</table>", RegexOption.DOT_MATCHES_ALL).containsMatchIn(table))
+		assertTrue(
+			Regex(
+				"<table>.*<th>a</th>.*<th>b</th>.*<td>1</td>.*<td>2</td>.*</table>",
+				RegexOption.DOT_MATCHES_ALL,
+			).containsMatchIn(table)
+		)
 		assertEquals("<p><del>gone</del></p>", MarkdownToHtml.convert("~~gone~~"))
-		assertTrue("<a href=\"https://example.com\">https://example.com</a>" in MarkdownToHtml.convert("see https://example.com"))
+		assertTrue(
+			"<a href=\"https://example.com\">https://example.com</a>" in MarkdownToHtml.convert("see https://example.com")
+		)
 	}
 
 	@Test

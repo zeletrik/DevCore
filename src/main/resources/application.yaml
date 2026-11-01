@@ -7,8 +7,12 @@ vaadin:
 spring:
   application:
     name: DevCore
+  threads:
+    # Request threads block on deep tool work (see DeepWork); virtual threads make that waiting cheap.
+    virtual:
+      enabled: true
 server:
-  # Honour X-Forwarded-* from a reverse proxy, including X-Forwarded-Prefix for path-stripping setups.
+  # Honor X-Forwarded-* from a reverse proxy, including X-Forwarded-Prefix for path-stripping setups.
   forward-headers-strategy: framework
 management:
   endpoints:

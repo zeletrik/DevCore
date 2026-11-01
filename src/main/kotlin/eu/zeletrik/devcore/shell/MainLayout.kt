@@ -6,9 +6,14 @@ import com.vaadin.flow.component.applayout.AppLayout
 import com.vaadin.flow.component.applayout.DrawerToggle
 import com.vaadin.flow.component.button.Button
 import com.vaadin.flow.component.button.ButtonVariant
+import com.vaadin.flow.component.html.Anchor
+import com.vaadin.flow.component.html.AnchorTarget
 import com.vaadin.flow.component.html.H1
 import com.vaadin.flow.component.html.Span
+import com.vaadin.flow.component.icon.SvgIcon
 import com.vaadin.flow.component.icon.VaadinIcon
+import com.vaadin.flow.component.orderedlayout.FlexComponent
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout
 import com.vaadin.flow.component.orderedlayout.VerticalLayout
 import com.vaadin.flow.component.sidenav.SideNav
 import com.vaadin.flow.component.sidenav.SideNavItem
@@ -16,12 +21,24 @@ import com.vaadin.flow.component.textfield.TextField
 import com.vaadin.flow.data.value.ValueChangeMode
 import com.vaadin.flow.router.AfterNavigationEvent
 import com.vaadin.flow.router.AfterNavigationObserver
+import com.vaadin.flow.router.RouterLink
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.boot.info.BuildProperties
 
 class MainLayout(
 	private val favorites: Favorites,
 	internal val recents: Recents,
 	private val catalog: ToolCatalog,
+	buildProperties: ObjectProvider<BuildProperties>,
 ) : AppLayout(), AfterNavigationObserver {
+	/** DevCore (Home), the version (About) and the repository, above the search. */
+	internal val home = RouterLink("DevCore", HomeView::class.java).apply { style.set("font-weight", "600") }
+	internal val version = RouterLink(buildProperties.ifAvailable?.version ?: "development", AboutView::class.java)
+	internal val repository = Anchor(Project.REPOSITORY_URL, SvgIcon("icons/github.svg")).apply {
+		setTarget(AnchorTarget.BLANK)
+		element.setAttribute("rel", "noopener noreferrer")
+		setAriaLabel("DevCore on GitHub")
+	}
 	internal val title = H1().apply {
 		style.set("font-size", "1.125rem").set("margin", "0")
 	}
@@ -36,6 +53,7 @@ class MainLayout(
 		setWidthFull()
 		addFocusShortcut(Key.KEY_K, KeyModifier.CONTROL)
 		addFocusShortcut(Key.KEY_K, KeyModifier.META)
+		helperText = "Ctrl+K / ⌘K"
 		addValueChangeListener { renderNav() }
 	}
 	internal val nav = SideNav()
@@ -46,18 +64,25 @@ class MainLayout(
 	init {
 		primarySection = Section.DRAWER
 		addToNavbar(DrawerToggle(), title, star)
-		addToDrawer(VerticalLayout(search, nav, noMatches).apply { isPadding = true })
+		val header = HorizontalLayout(home, version, repository).apply {
+			defaultVerticalComponentAlignment = FlexComponent.Alignment.CENTER
+		}
+		addToDrawer(VerticalLayout(header, search, nav, noMatches).apply { isPadding = true })
 		renderNav()
 	}
 
-	/** Home, favorites, then one group per category. A search shows every group expanded; a star toggle keeps them as they were. */
+	/**
+	 * Home, favorites, then one group per category. A search shows every group expanded; a star toggle keeps them as they
+	 * were.
+	 */
 	private fun renderNav(expandAll: Boolean = true) {
 		val collapsed = if (expandAll) emptySet() else groups.filterValues { !it.isExpanded }.keys
 		nav.removeAll()
 		groups.clear()
 		nav.addItem(SideNavItem("Home", HomeView::class.java, VaadinIcon.HOME.create()))
 		val matches = catalog.visible.filter { it.matches(search.value.trim()) }
-		matches.filter { it in favorites }.forEach { nav.addItem(item(it).apply { suffixComponent = VaadinIcon.STAR.create() }) }
+		matches.filter { it in favorites }
+			.forEach { nav.addItem(item(it).apply { suffixComponent = VaadinIcon.STAR.create() }) }
 		val byCategory = matches.groupBy { it.category }
 		Category.sorted().forEach { category ->
 			val tools = byCategory[category] ?: return@forEach
@@ -83,7 +108,12 @@ class MainLayout(
 	override fun afterNavigation(event: AfterNavigationEvent) {
 		currentTool = Tool.of(content.javaClass)
 		currentTool?.let(recents::record)
-		title.text = currentTool?.title ?: if (content is HomeView) "Home" else ""
+		title.text = currentTool?.title ?: when (content) {
+			is HomeView -> "Home"
+			is AboutView -> "About"
+			is NotFoundView -> "Not found"
+			else -> ""
+		}
 		star.isVisible = currentTool != null
 		renderStar()
 	}

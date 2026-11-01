@@ -14,7 +14,7 @@ import eu.zeletrik.devcore.shell.numberField
 import eu.zeletrik.devcore.tools.FieldError
 
 /** Distinct ports in a range; by default the well-known ports 0–1023 are left out. */
-@Route("random-port", layout = MainLayout::class)
+@Route("random-port-generator", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class RandomPortView : GeneratorView(Tool.RANDOM_PORT) {
@@ -25,15 +25,19 @@ class RandomPortView : GeneratorView(Tool.RANDOM_PORT) {
 
 	init {
 		add(
-			HorizontalLayout(min, max, count, generateButton).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true },
+			HorizontalLayout(min, max, count, generateButton, generateError).apply {
+				defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
+				isWrap = true
+			},
 			output,
 		)
 	}
 
 	override fun produce() {
-		val from = boundedInt(min, 1..65535) ?: return
-		val to = boundedInt(max, 1..65535) ?: return
-		val n = boundedInt(count, 1..100) ?: return
+		val from = boundedInt(min, 1..65535)
+		val to = boundedInt(max, 1..65535)
+		val n = boundedInt(count, 1..100)
+		if (from == null || to == null || n == null) return
 		try {
 			output.value = RandomNumbers.generate(from.toLong(), to.toLong(), n, unique = true).joinToString("\n")
 		} catch (e: FieldError) {

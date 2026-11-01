@@ -33,7 +33,7 @@ class ConverterViewsBrowserlessTest : SpringBrowserlessTest() {
 	}
 
 	@Test
-	fun `colour - swatch from the parsed colour, picker writes the input`() {
+	fun `color - swatch from the parsed color, picker writes the input`() {
 		val view = navigate("color-converter?input=Red", ColorView::class.java)
 		assertTrue(view.swatch.isVisible)
 		assertEquals("#ff0000", view.swatch.style.get("background-color"))
@@ -44,7 +44,7 @@ class ConverterViewsBrowserlessTest : SpringBrowserlessTest() {
 	}
 
 	@Test
-	fun `colour - the picker applies while it is still open`() {
+	fun `color - the picker applies while it is still open`() {
 		val view = navigate(ColorView::class.java)
 		assertEquals(ValueChangeMode.TIMEOUT, view.picker.valueChangeMode)
 		assertTrue(view.picker.valueChangeTimeout in 1..250)

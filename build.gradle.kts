@@ -1,3 +1,4 @@
+import com.github.jk1.license.render.JsonReportRenderer
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.plugin.getSupportedKotlinVersion
 import org.gradle.kotlin.dsl.withType
@@ -9,6 +10,7 @@ plugins {
 	id("io.spring.dependency-management") version "1.1.7"
 	id("com.vaadin") version "25.3.4"
 	id("dev.detekt") version "2.0.0-alpha.3"
+	id("com.github.jk1.dependency-license-report") version "3.1.4"
 }
 repositories {
 	mavenCentral()
@@ -93,5 +95,44 @@ tasks.withType<Detekt>().configureEach {
 		html.required.set(true)
 		sarif.required.set(true)
 		markdown.required.set(false)
+	}
+}
+
+// The libraries the jar ships (development-only ones excluded), for the About page and the bundled notices.
+licenseReport {
+	configurations = arrayOf("productionRuntimeClasspath")
+	renderers = arrayOf(JsonReportRenderer("dependencies.json", false))
+}
+
+val licenseReportDir = layout.buildDirectory.dir("reports/dependency-license")
+
+/** The curated NOTICE, then each bundled library's own NOTICE text once, naming the libraries that carry it. */
+val assembleNotice by tasks.registering {
+	dependsOn("generateLicenseReport")
+	val curated = layout.projectDirectory.file("NOTICE")
+	val reports = licenseReportDir
+	val output = layout.buildDirectory.file("generated/notice/NOTICE")
+	inputs.file(curated)
+	inputs.dir(reports)
+	outputs.file(output)
+	doLast {
+		val root = reports.get().asFile
+		val byText = root.walkTopDown()
+			.filter { it.isFile && it.name.lowercase().startsWith("notice") }
+			.groupBy({ it.readText().trim() }, { it.relativeTo(root).path.substringBefore('/').removeSuffix(".jar") })
+			.toSortedMap()
+		val upstream = byText.entries.joinToString("\n\n") { (text, modules) -> "=== ${modules.sorted().joinToString(", ")} ===\n$text" }
+		output.get().asFile.apply { parentFile.mkdirs() }.writeText(curated.asFile.readText().trimEnd() + "\n\n" + upstream + "\n")
+	}
+}
+
+tasks.processResources {
+	dependsOn(assembleNotice)
+	into("META-INF/devcore") {
+		from(assembleNotice)
+		from(licenseReportDir.map { it.file("dependencies.json") })
+		from("LICENSE", "licenses/Apache-2.0.txt")
+		// Present only in a release checkout: semantic-release writes it before the release build.
+		from("CHANGELOG.md")
 	}
 }

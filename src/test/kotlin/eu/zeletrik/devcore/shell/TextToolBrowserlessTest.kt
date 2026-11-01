@@ -37,7 +37,7 @@ class TextToolBrowserlessTest : SpringBrowserlessTest() {
 		test(view.input).setValue("aGk=")
 		test(view.input).setValue("aGk*")
 		assertTrue(view.input.isInvalid)
-		assertEquals("Not valid Base64", view.input.errorMessage)
+		assertEquals("Invalid Base64", view.input.errorMessage)
 		assertEquals("", view.output.value)
 		test(view.input).setValue("aGk=")
 		assertFalse(view.input.isInvalid)

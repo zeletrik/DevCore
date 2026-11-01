@@ -8,12 +8,20 @@ enum class IdVersion(val label: String) { V4("v4"), V7("v7"), ULID("ULID") }
 
 object Uuids {
 	private const val CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+	private const val ULID_LENGTH = 26
+	private const val BITS_PER_CHARACTER = 5
+	private const val TIME_BYTES = 6
+	private const val RANDOM_BYTES = 10
 
 	/** 26 Crockford Base32 characters: 48-bit Unix milliseconds, then 80 random bits; always uppercase. */
 	fun ulid(epochMillis: Long): String {
-		val bytes = ByteArray(6) { (epochMillis ushr (40 - 8 * it)).toByte() } + ByteArray(10).also(secureRandom::nextBytes)
-		val value = BigInteger(1, bytes)
-		return String(CharArray(26) { i -> CROCKFORD[value.shiftRight(5 * (25 - i)).toInt() and 31] })
+		val time = ByteArray(TIME_BYTES) { (epochMillis ushr (Byte.SIZE_BITS * (TIME_BYTES - 1 - it))).toByte() }
+		val value = BigInteger(1, time + ByteArray(RANDOM_BYTES).also(secureRandom::nextBytes))
+		return String(
+			CharArray(ULID_LENGTH) { i ->
+				CROCKFORD[value.shiftRight(BITS_PER_CHARACTER * (ULID_LENGTH - 1 - i)).toInt() and (CROCKFORD.length - 1)]
+			},
+		)
 	}
 
 	// NOTE: replace with UUID.ofEpochMillis when the toolchain reaches JDK 27.

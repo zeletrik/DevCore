@@ -29,7 +29,11 @@ class HashGeneratorView : TextToolView<TextArea>(Tool.HASH, textArea("Text")) {
 		val hmac = key.value.isNotEmpty()
 		outputs.forEach { (algorithm, field) ->
 			field.relabel(if (hmac) "HMAC-$algorithm" else algorithm)
-			field.value = if (hmac) Hashes.hmac(text, key.value, algorithm, uppercase.value) else Hashes.digest(text, algorithm, uppercase.value)
+			field.value = if (hmac) {
+				Hashes.hmac(text, key.value, algorithm, uppercase.value)
+			} else {
+				Hashes.digest(text, algorithm, uppercase.value)
+			}
 		}
 	}
 

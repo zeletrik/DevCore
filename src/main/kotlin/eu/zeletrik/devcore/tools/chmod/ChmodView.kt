@@ -36,11 +36,17 @@ class ChmodView : TextToolView<TextField>(Tool.CHMOD, textLine("Mode")) {
 	internal val command = OutputField("Command")
 
 	init {
+		val label = Span("Permissions").apply { setId("chmod-permissions") }
 		val grid = Div().apply {
-			style.set("display", "grid").set("grid-template-columns", "repeat(3, minmax(8rem, max-content))").set("gap", "0.25rem 1rem")
+			// One labelled group, so assistive technology announces the twelve checkboxes as a unit.
+			element.setAttribute("role", "group")
+			element.setAttribute("aria-labelledby", "chmod-permissions")
+			style.set("display", "grid")
+				.set("grid-template-columns", "repeat(3, minmax(8rem, max-content))")
+				.set("gap", "0.25rem 1rem")
 			boxes.values.forEach(::add)
 		}
-		add(input, Span("Permissions"), grid, octal, symbolic, command)
+		add(input, label, grid, octal, symbolic, command)
 	}
 
 	private fun fromBoxes() {

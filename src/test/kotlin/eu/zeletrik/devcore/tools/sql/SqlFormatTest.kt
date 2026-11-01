@@ -5,18 +5,28 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SqlFormatTest {
-	private fun format(sql: String, dialect: SqlDialect = SqlDialect.STANDARD, indent: Int = 2, uppercase: Boolean = true) =
+	private fun format(
+		sql: String,
+		dialect: SqlDialect = SqlDialect.STANDARD,
+		indent: Int = 2,
+		uppercase: Boolean = true,
+	) =
 		SqlFormat.format(sql, dialect, indent, uppercase)
 
 	@Test
 	fun `offers the six dialects, Standard SQL first`() {
-		assertEquals(listOf("Standard SQL", "PostgreSQL", "MySQL", "MariaDB", "SQL Server", "Oracle PL/SQL"), SqlDialect.entries.map { it.label })
+		assertEquals(
+			listOf("Standard SQL", "PostgreSQL", "MySQL", "MariaDB", "SQL Server", "Oracle PL/SQL"),
+			SqlDialect.entries.map { it.label },
+		)
 	}
 
 	@Test
 	fun `clauses on their own lines, list items indented`() {
 		val lines = format("select a, b from t where x = 1 order by a").lines()
-		listOf("SELECT", "FROM", "WHERE", "ORDER BY").forEach { clause -> assertTrue(lines.any { it == clause }, "$clause in $lines") }
+		listOf("SELECT", "FROM", "WHERE", "ORDER BY").forEach { clause ->
+			assertTrue(lines.any { it == clause }, "$clause in $lines")
+		}
 		val select = format("select a, b from t").lines()
 		assertEquals(listOf("SELECT", "  a,", "  b", "FROM", "  t"), select)
 		assertEquals(listOf("SELECT", "    a,", "    b", "FROM", "    t"), format("select a, b from t", indent = 4).lines())

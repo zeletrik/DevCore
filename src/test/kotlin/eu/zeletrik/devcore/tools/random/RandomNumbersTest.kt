@@ -21,7 +21,10 @@ class RandomNumbersTest {
 		RandomNumbers.generate(Long.MIN_VALUE, Long.MAX_VALUE, 20, false)
 		assertTrue(RandomNumbers.generate(1, Long.MAX_VALUE, 20, false).all { it >= 1 })
 		assertEquals(Long.MAX_VALUE, RandomNumbers.draw(Long.MAX_VALUE, Long.MAX_VALUE))
-		assertTrue((1..2000).map { RandomNumbers.draw(Long.MAX_VALUE - 1, Long.MAX_VALUE) }.toSet() == setOf(Long.MAX_VALUE - 1, Long.MAX_VALUE))
+		assertTrue(
+			(1..2000).map { RandomNumbers.draw(Long.MAX_VALUE - 1, Long.MAX_VALUE) }
+				.toSet() == setOf(Long.MAX_VALUE - 1, Long.MAX_VALUE)
+		)
 	}
 
 	@Test
@@ -33,10 +36,16 @@ class RandomNumbersTest {
 
 	@Test
 	fun errors() {
-		assertEquals("Must be at least the minimum", assertFailsWith<FieldError> { RandomNumbers.generate(5, 4, 1, false) }.message)
+		assertEquals(
+			"Must be at least the minimum",
+			assertFailsWith<FieldError> { RandomNumbers.generate(5, 4, 1, false) }.message,
+		)
 		val e = assertFailsWith<FieldError> { RandomNumbers.generate(1, 5, 6, unique = true) }
 		assertEquals("count", e.field)
 		assertEquals("Only 5 unique numbers in this range", e.message)
-		assertEquals("Only 3 unique numbers in this range", assertFailsWith<FieldError> { RandomNumbers.generate(8080, 8082, 4, true) }.message)
+		assertEquals(
+			"Only 3 unique numbers in this range",
+			assertFailsWith<FieldError> { RandomNumbers.generate(8080, 8082, 4, true) }.message,
+		)
 	}
 }

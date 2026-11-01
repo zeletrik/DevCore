@@ -25,7 +25,7 @@ object TextStatistics {
 		var start = iterator.first()
 		var end = iterator.next()
 		while (end != BreakIterator.DONE) {
-			if (text.substring(start, end).any { it.isLetterOrDigit() }) count++
+			if (text.substring(start, end).codePoints().anyMatch(Character::isLetterOrDigit)) count++
 			start = end
 			end = iterator.next()
 		}

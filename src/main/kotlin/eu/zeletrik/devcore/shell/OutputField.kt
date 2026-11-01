@@ -15,6 +15,12 @@ class OutputField(label: String) : TextArea(label) {
 	}
 
 	/** Changes the visible label and the copy button's accessible name together. */
+	/** Every tool output passes through here, so no output can pass the output cap unnoticed. */
+	override fun setValue(value: String) {
+		if (value.length > MAX_OUTPUT_CHARS) throw OutputTooLarge()
+		super.setValue(value)
+	}
+
 	fun relabel(text: String) {
 		label = text
 		copy.setAriaLabel("Copy $text")

@@ -51,7 +51,10 @@ class JsonFormatterTest {
 
 	@Test
 	fun `minified output`() {
-		assertEquals("""{"a":[1,{}],"b":"x"}""", JsonFormatter.format("{\n  \"a\": [\n    1,\n    {}\n  ],\n  \"b\": \"x\"\n}", Indent.MINIFIED))
+		assertEquals(
+			"""{"a":[1,{}],"b":"x"}""",
+			JsonFormatter.format("{\n  \"a\": [\n    1,\n    {}\n  ],\n  \"b\": \"x\"\n}", Indent.MINIFIED),
+		)
 	}
 
 	@Test
@@ -89,10 +92,11 @@ class JsonFormatterTest {
 	@Test
 	fun `expand - an SNS message inside an SQS body inside a Lambda event, numbers untouched`() {
 		val s3 = """{"Records":[{"s3":{"object":{"key":"a.csv","size":12345678901234567890,"ratio":1.50}}}]}"""
-		val sns = """{"Type":"Notification","TopicArn":"arn:aws:sns:eu-west-1:123456789012:uploads","Message":${quoted(s3)}}"""
+		val topic = "arn:aws:sns:eu-west-1:123456789012:uploads"
+		val sns = """{"Type":"Notification","TopicArn":"$topic","Message":${quoted(s3)}}"""
 		val event = """{"Records":[{"messageId":"m1","body":${quoted(sns)}}]}"""
 		assertEquals(
-			"""{"Records":[{"messageId":"m1","body":{"Type":"Notification","TopicArn":"arn:aws:sns:eu-west-1:123456789012:uploads",""" +
+			"""{"Records":[{"messageId":"m1","body":{"Type":"Notification","TopicArn":"$topic",""" +
 				""""Message":{"Records":[{"s3":{"object":{"key":"a.csv","size":12345678901234567890,"ratio":1.50}}}]}}}]}""",
 			expanded(event),
 		)
@@ -143,6 +147,8 @@ class JsonFormatterTest {
 	fun `expand - invalid JSON still reports the first problem`() {
 		val message = assertFailsWith<IllegalArgumentException> { expanded("[1,]") }.message!!
 		assertEquals(invalid("[1,]"), message)
-		assertTrue(assertFailsWith<IllegalArgumentException> { expanded("C:\\temp\\new") }.message!!.startsWith("Invalid JSON"))
+		assertTrue(
+			assertFailsWith<IllegalArgumentException> { expanded("C:\\temp\\new") }.message!!.startsWith("Invalid JSON")
+		)
 	}
 }

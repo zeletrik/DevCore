@@ -9,9 +9,9 @@ import eu.zeletrik.devcore.tools.hash.HashGeneratorView
 import eu.zeletrik.devcore.tools.hashing.HashMode
 import eu.zeletrik.devcore.tools.hashing.PasswordHashes
 import eu.zeletrik.devcore.tools.hashing.PasswordHashingView
+import eu.zeletrik.devcore.tools.jwt.JwtView
 import eu.zeletrik.devcore.tools.keys.KeyAlgorithm
 import eu.zeletrik.devcore.tools.keys.KeyPairView
-import eu.zeletrik.devcore.tools.jwt.JwtView
 import eu.zeletrik.devcore.tools.uuid.IdVersion
 import eu.zeletrik.devcore.tools.uuid.UuidGeneratorView
 import org.junit.jupiter.api.Test
@@ -63,7 +63,9 @@ class SecurityViewsBrowserlessTest : SpringBrowserlessTest() {
 		assertTrue(view.openSsh.value.startsWith("ssh-rsa ") && view.openSsh.value.endsWith(" me@host"))
 	}
 
-	private val jwtIo = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+	private val jwtIo = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+		"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ." +
+		"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
 	@Test
 	fun `jwt - decode by default, signature check with a secret, the old id is gone`() {
@@ -116,12 +118,14 @@ class SecurityViewsBrowserlessTest : SpringBrowserlessTest() {
 	}
 
 	@Test
-	fun `basic auth - the password never comes from the URL, the header does`() {
+	fun `basic auth - nothing comes from the URL, in either mode`() {
 		val encode = navigate("basic-auth?input=QWxhZGRpbjpvcGVuIHNlc2FtZQ%3D%3D", BasicAuthView::class.java)
 		assertEquals("", encode.input.value)
 		assertEquals("", encode.password.value)
-		val decode = navigate("basic-auth?mode=decode&input=QWxhZGRpbjpvcGVuIHNlc2FtZQ%3D%3D", BasicAuthView::class.java)
-		assertEquals("Aladdin", decode.decodedUsername.value)
-		assertEquals("open sesame", decode.decodedPassword.value)
+		val decode = navigate("basic-auth?mode=decode&input=Basic%20dXNlcjpwYXNz", BasicAuthView::class.java)
+		assertEquals(Mode.DECODE, decode.mode.value)
+		assertEquals("", decode.input.value)
+		assertEquals("", decode.decodedUsername.value)
+		assertEquals("", decode.decodedPassword.value)
 	}
 }

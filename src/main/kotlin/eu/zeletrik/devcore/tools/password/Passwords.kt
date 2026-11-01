@@ -36,7 +36,9 @@ object Passwords {
 	}
 
 	fun passphrase(count: Int, separator: String, capitalize: Boolean): String =
-		List(count) { words.random(random).let { word -> if (capitalize) word.replaceFirstChar { it.uppercase() } else word } }
+		List(count) {
+			words.random(random).let { word -> if (capitalize) word.replaceFirstChar { it.uppercase() } else word }
+		}
 			.joinToString(separator)
 
 	fun passwordEntropy(length: Int, sets: Set<CharSet>, excludeAmbiguous: Boolean) =

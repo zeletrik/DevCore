@@ -6,6 +6,7 @@ import com.vaadin.flow.component.textfield.TextArea
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
 import com.vaadin.flow.spring.annotation.UIScope
+import eu.zeletrik.devcore.shell.DeepWork
 import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
@@ -33,7 +34,8 @@ class DataFormatView : TextToolView<TextArea>(Tool.DATA_FORMAT, textArea("Input"
 	}
 
 	override fun render(text: String) {
-		output.value = DataFormats.convert(text, from.value, to.value)
+		val (source, target) = from.value to to.value
+		output.value = DeepWork.run { DataFormats.convert(text, source, target) }
 	}
 
 	override fun clearOutputs() = output.clear()
