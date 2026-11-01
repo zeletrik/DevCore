@@ -96,8 +96,9 @@ licenseReport {
 
 val licenseReportDir = layout.buildDirectory.dir("reports/dependency-license")
 
-/** The curated NOTICE, then each bundled library's own NOTICE text once, naming the libraries that carry it. */
-val assembleNotice by tasks.registering {
+val assembleNotice = tasks.register("assembleNotice") {
+	group = "build"
+	description = "Writes the curated NOTICE plus each bundled library's own NOTICE text, naming the libraries that carry it."
 	dependsOn("generateLicenseReport")
 	val curated = layout.projectDirectory.file("NOTICE")
 	val reports = licenseReportDir
