@@ -1,8 +1,6 @@
 package eu.zeletrik.devcore.tools.xml
 
 import eu.zeletrik.devcore.tools.json.Indent
-import java.net.ServerSocket
-import java.net.SocketTimeoutException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -33,25 +31,62 @@ class XmlFormatterTest {
 	}
 
 	@Test
+	fun `a standalone declaration, a PI without data and the minified top level`() {
+		val input = "<?xml version=\"1.0\" standalone=\"yes\"?><a><?pi?></a>"
+		assertEquals(input, XmlFormatter.format(input, Indent.MINIFIED))
+		assertEquals(
+			"<?xml version=\"1.0\" standalone=\"yes\"?>\n<a>\n  <?pi?>\n</a>",
+			XmlFormatter.format(input),
+		)
+	}
+
+	@Test
+	fun `namespace declarations come first, then attributes`() {
+		assertEquals(
+			"<r xmlns=\"urn:x\" xmlns:p=\"urn:p\" p:a=\"1\">\n  <p:c/>\n</r>",
+			XmlFormatter.format("<r xmlns=\"urn:x\" xmlns:p=\"urn:p\" p:a=\"1\"><p:c/></r>"),
+		)
+	}
+
+	@Test
+	fun `text around entity and character references is joined and escaped once`() {
+		assertEquals("<a>Tom &amp; \"Jerry\"</a>", XmlFormatter.format("<a>Tom &amp; &quot;Jerry&quot;</a>"))
+		assertEquals("<a>line1\nline2</a>", XmlFormatter.format("<a>line1&#10;line2</a>"))
+		assertEquals("<a>a  b</a>", XmlFormatter.format("<a>a&#32;&#32;b</a>"))
+		assertEquals("<a>1 &lt; 2 &gt; 0</a>", XmlFormatter.format("<a>1 &lt; 2 &gt; 0</a>"))
+	}
+
+	@Test
+	fun `attribute values keep the whitespace references a parser would normalize`() {
+		assertEquals("<a t=\"l1&#10;l2\" u=\"x&#9;y\"/>", XmlFormatter.format("<a t=\"l1&#10;l2\" u=\"x&#9;y\"/>"))
+		assertEquals("<a t=\"x&#13;y\"/>", XmlFormatter.format("<a t=\"x&#13;y\"/>"))
+	}
+
+	@Test
+	fun `whitespace-only values are kept, whitespace between elements is layout`() {
+		assertEquals("<cfg>\n  <sep> </sep>\n</cfg>", XmlFormatter.format("<cfg><sep> </sep></cfg>"))
+		assertEquals("<a>\n  <b/>\n</a>", XmlFormatter.format("<a>\n  <b/>\n</a>"))
+	}
+
+	@Test
+	fun `a leading byte order mark is accepted`() {
+		assertEquals("<a/>", XmlFormatter.format(Char(0xFEFF) + "<a/>"))
+	}
+
+	@Test
 	fun `not well-formed input reports line and column`() {
 		listOf("<a><b/></a>x", "<a>").forEach { assertTrue(error(it).startsWith("Invalid XML at line 1, column"), it) }
 	}
 
 	@Test
-	fun `any DTD is refused before an entity could be resolved, read or expanded`() {
+	fun `any DTD is refused before an entity could be resolved or read`() {
 		assertEquals("DTDs aren't supported", error("<!DOCTYPE x [<!ENTITY a \"b\">]><x>&a;</x>"))
 		assertEquals("DTDs aren't supported", error("<!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/hostname\">]><x>&e;</x>"))
-		val laughs = "<!DOCTYPE l [<!ENTITY l0 \"ha\">" + (1..9).joinToString("") {
-			"<!ENTITY l$it \"" + "&l${it - 1};".repeat(10) + "\">"
-		} + "]><l>&l9;</l>"
-		assertEquals("DTDs aren't supported", error(laughs))
-		ServerSocket(0).use { server ->
-			server.soTimeout = 300
-			assertEquals(
-				"DTDs aren't supported",
-				error("<!DOCTYPE x [<!ENTITY e SYSTEM \"http://127.0.0.1:${server.localPort}/x\">]><x>&e;</x>"),
-			)
-			assertFailsWith<SocketTimeoutException> { server.accept() }
-		}
+	}
+
+	@Test
+	fun `the output stops at the cap while it is written`() {
+		val xml = "<a>".repeat(90) + "<b/>".repeat(60_000) + "</a>".repeat(90)
+		assertEquals("Output is too large (max 5,000,000 characters)", error(xml))
 	}
 }

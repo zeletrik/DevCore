@@ -106,8 +106,11 @@ object XmlFormatter {
 				}
 				CDATA -> add(Leaf("<![CDATA[${reader.text}]]>", inline = true))
 				COMMENT -> add(Leaf("<!--${reader.text}-->", inline = false))
-				PROCESSING_INSTRUCTION ->
-					add(Leaf("<?${reader.piTarget}${reader.piData?.let { " $it" }.orEmpty()}?>", inline = false))
+				PROCESSING_INSTRUCTION -> {
+					// The JDK reports a PI without data as empty data, not as none.
+					val data = reader.piData?.takeIf { it.isNotEmpty() }?.let { " $it" }.orEmpty()
+					add(Leaf("<?${reader.piTarget}$data?>", inline = false))
+				}
 			}
 		}
 

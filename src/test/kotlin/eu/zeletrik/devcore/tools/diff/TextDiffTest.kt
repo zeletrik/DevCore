@@ -1,9 +1,11 @@
 package eu.zeletrik.devcore.tools.diff
 
 import eu.zeletrik.devcore.tools.FieldError
+import kotlin.system.measureNanoTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class TextDiffTest {
 	private val minus = Char(0x2212)
@@ -46,6 +48,24 @@ class TextDiffTest {
 		assertEquals("No differences", diff("a b ", " a b", ignoreWhitespace = true).status)
 		val shown = diff("Foo Bar", "Baz", ignoreCase = true, ignoreWhitespace = true).unified.lines()
 		assertEquals(listOf("-Foo Bar", "+Baz"), shown.drop(3))
+		val context = diff("A  b\nkeep\nold", "a b\nkeep\nnew", ignoreCase = true, ignoreWhitespace = true).unified.lines()
+		assertTrue(" A  b" in context && "-old" in context && "+new" in context, context.toString())
+	}
+
+	@Test
+	fun `only additions or only removals count as such`() {
+		assertEquals("+0 ${minus}1 lines", diff("a\nb", "a").status)
+		assertEquals("+1 ${minus}0 lines", diff("", "a").status)
+	}
+
+	@Test
+	fun `both ignore options on 10,000 lines finish quickly`() {
+		val original = (1..10_000).joinToString("\n") { "Line  $it of the ORIGINAL text" }
+		val changed = (1..10_000).joinToString("\n") { "changed line $it, entirely different" }
+		var result: Diff? = null
+		val nanos = measureNanoTime { result = diff(original, changed, ignoreCase = true, ignoreWhitespace = true) }
+		assertTrue(nanos < 5_000_000_000, "took ${nanos / 1_000_000} ms")
+		assertTrue(result!!.unified.contains("-Line  1 of the ORIGINAL text"))
 	}
 
 	@Test

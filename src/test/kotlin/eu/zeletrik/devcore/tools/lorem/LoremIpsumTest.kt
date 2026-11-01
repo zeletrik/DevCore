@@ -2,6 +2,7 @@ package eu.zeletrik.devcore.tools.lorem
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class LoremIpsumTest {
@@ -30,5 +31,19 @@ class LoremIpsumTest {
 				}
 			}
 		}
+	}
+
+	@Test
+	fun `the classic start is optional for words and sentences`() {
+		val classic = LoremIpsum.generate(LoremUnit.WORDS, 9, classicStart = true)
+		assertTrue(classic.startsWith("Lorem ipsum dolor sit amet consectetur adipiscing elit "), classic)
+		assertEquals(9, classic.split(" ").size)
+		val words = LoremIpsum.generate(LoremUnit.WORDS, 3, classicStart = false).split(" ")
+		assertEquals(3, words.size)
+		assertTrue(words.all { word -> word.all { it in 'a'..'z' } }, words.toString())
+		val text = LoremIpsum.generate(LoremUnit.SENTENCES, 2, classicStart = false)
+		assertEquals(2, sentences(text).size)
+		// Random sentences have no comma, so only the classic opening can start this way.
+		assertFalse(text.startsWith("Lorem ipsum dolor sit amet,"), text)
 	}
 }

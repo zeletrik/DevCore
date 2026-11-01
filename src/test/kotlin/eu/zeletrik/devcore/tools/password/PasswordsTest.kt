@@ -2,6 +2,7 @@ package eu.zeletrik.devcore.tools.password
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class PasswordsTest {
@@ -32,6 +33,18 @@ class PasswordsTest {
 	@Test
 	fun `ambiguous characters can be excluded`() {
 		repeat(200) { assertTrue(Passwords.password(64, all, excludeAmbiguous = true).none { it in "Il1O0o|" }) }
+	}
+
+	@Test
+	fun `too short a length or no character set is refused`() {
+		assertEquals(
+			"Length must be at least the number of character sets",
+			assertFailsWith<IllegalArgumentException> { Passwords.password(3, all, false) }.message,
+		)
+		assertEquals(
+			"Select at least one character set",
+			assertFailsWith<IllegalArgumentException> { Passwords.password(8, emptySet(), false) }.message,
+		)
 	}
 
 	@Test

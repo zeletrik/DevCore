@@ -25,8 +25,15 @@ class HtmlEntitiesTest {
 
 	@Test
 	fun `anything that is not a complete reference stays as written, without errors`() {
-		listOf("&amp", "&nope;", "& b", "&#99999999999;", "&;", "&#;").forEach {
+		listOf("&amp", "&nope;", "& b", "&#99999999999;", "&;", "&#;", "&#x110000;").forEach {
 			assertEquals(it, HtmlEntities.decode(it))
 		}
+	}
+
+	@Test
+	fun `numeric references follow the HTML standard`() {
+		assertEquals("a\uFFFDb€c–d", HtmlEntities.decode("a&#0;b&#128;c&#150;d"))
+		assertEquals("\uFFFD", HtmlEntities.decode("&#xD800;"))
+		assertEquals(Char(0x81).toString(), HtmlEntities.decode("&#129;"))
 	}
 }

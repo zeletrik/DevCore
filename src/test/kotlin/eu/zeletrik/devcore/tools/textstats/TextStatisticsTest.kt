@@ -23,4 +23,10 @@ class TextStatisticsTest {
 		val s = stats("Héllo 😀")
 		assertEquals(listOf(7, 1, 11), listOf(s["Characters"], s["Words"], s["UTF-8 bytes"]))
 	}
+
+	@Test
+	fun `supplementary letters make words, and blank lines separate paragraphs`() {
+		assertEquals(1, stats("𝐇𝐞𝐥𝐥𝐨")["Words"])
+		assertEquals(2, stats("a\n\n \n\nb")["Paragraphs"])
+	}
 }

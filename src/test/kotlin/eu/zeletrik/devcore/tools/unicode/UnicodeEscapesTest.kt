@@ -39,7 +39,9 @@ class UnicodeEscapesTest {
 		assertEquals("😀", UnicodeEscapes.decode("U+1F600"))
 		assertEquals("A", UnicodeEscapes.decode("U+0041"))
 		assertEquals(String(Character.toChars(0x10FFFF)), UnicodeEscapes.decode("U+10FFFF"))
-		unchanged("U+041", "U+1F6000", "U+110000")
+		unchanged("U+041", "U+1F6000", "U+110000", "&#x110000;", "&#1114112;")
+		assertEquals("A U+41 B", UnicodeEscapes.decode("U+0041 U+41 U+0042"))
+		assertEquals("A".repeat(4_000), UnicodeEscapes.decode("U+0041 ".repeat(4_000).trim()))
 	}
 
 	@Test

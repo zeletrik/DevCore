@@ -125,4 +125,14 @@ class PasswordHashesTest {
 			rejects("Not a bcrypt or Argon2 hash", it)
 		}
 	}
+
+	@Test
+	fun `argon2 parallelism verifies up to 16 lanes and is refused beyond, or with too little memory per lane`() {
+		assertTrue(PasswordHashes.verify("hunter2", argon2("id", Argon2Parameters.ARGON2_id, "hunter2", 128, 1, 16)))
+		val salt = "AAECAwQFBgcICQoLDA0ODw"
+		val hash = "A".repeat(43)
+		rejects("Cost too high to verify here", "\$argon2id\$v=19\$m=65536,t=10,p=17\$$salt\$$hash")
+		rejects("Not a supported hash", "\$argon2id\$v=19\$m=65536,t=10,p=0\$$salt\$$hash")
+		rejects("Not a supported hash", "\$argon2id\$v=19\$m=127,t=1,p=16\$$salt\$$hash")
+	}
 }

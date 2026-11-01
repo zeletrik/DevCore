@@ -53,4 +53,27 @@ class UrlParserTest {
 			}.message!!.startsWith("Not a valid URL: ")
 		)
 	}
+
+	@Test
+	fun `authorities java's URI can't split as a server still show their parts`() {
+		mapOf(
+			"http://my_service:8080/api" to listOf("Host: my_service", "Port: 8080", "Path: /api"),
+			"postgres://user:p%40ss@db_host:5432/mydb" to
+				listOf("Username: user", "Password: p@ss", "Host: db_host", "Port: 5432"),
+			"https://bücher.de/pfad" to listOf("Host: bücher.de", "Port: default (443)"),
+			"https://user%3Aname:pw@example.com/" to listOf("Username: user:name", "Password: pw", "Host: example.com"),
+			"http://example.com:80/" to listOf("Port: 80"),
+			"https://a+b:c+d@example.com/" to listOf("Username: a+b", "Password: c+d"),
+			"http://my_service:abc/" to listOf("Host: my_service:abc", "Port: default (80)"),
+		).forEach { (url, expected) ->
+			val actual = lines(url)
+			expected.forEach { assertTrue(it in actual, "$it in $actual") }
+		}
+	}
+
+	@Test
+	fun `only the parts a URL has are listed`() {
+		assertEquals(listOf("Scheme: mailto"), lines("mailto:ann@example.com"))
+		assertFalse("Path" in fields("https://example.com"))
+	}
 }

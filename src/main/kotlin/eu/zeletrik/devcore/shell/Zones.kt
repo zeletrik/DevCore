@@ -15,11 +15,14 @@ fun zonePicker(label: String = "Time zone", onChange: () -> Unit): ComboBox<Stri
 			if (it.isFromClient) chosen = true
 			onChange()
 		}
+		fun preselect(id: String?) {
+			val browserZone = id?.takeIf { runCatching { ZoneId.of(it) }.isSuccess }
+			if (!chosen && browserZone != null) value = browserZone
+		}
 		addAttachListener { event ->
-			event.ui.page.retrieveExtendedClientDetails { details ->
-				val browserZone = details.timeZoneId?.takeIf { id -> runCatching { ZoneId.of(id) }.isSuccess }
-				if (!chosen && browserZone != null) value = browserZone
-			}
+			// The browser sends its details with the first request; a placeholder without them takes one round trip.
+			val details = event.ui.page.extendedClientDetails
+			if (details.timeZoneId != null) preselect(details.timeZoneId) else details.refresh { preselect(it.timeZoneId) }
 		}
 	}
 }

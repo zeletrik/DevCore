@@ -192,10 +192,10 @@ private object StrictTree {
 			JsonToken.VALUE_FALSE -> nodes.booleanNode(false)
 			JsonToken.VALUE_NULL -> nodes.nullNode()
 			JsonToken.VALUE_EMBEDDED_OBJECT -> when (val value = parser.embeddedObject) {
-				is ByteArray -> nodes.textNode(Base64.getEncoder().encodeToString(value))
-				else -> nodes.textNode(value.toString())
+				is ByteArray -> nodes.stringNode(Base64.getEncoder().encodeToString(value))
+				else -> nodes.stringNode(value.toString())
 			}
-			else -> nodes.textNode(parser.string)
+			else -> nodes.stringNode(parser.string)
 		}
 	}
 

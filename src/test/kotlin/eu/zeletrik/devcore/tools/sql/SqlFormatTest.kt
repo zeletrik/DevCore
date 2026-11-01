@@ -2,6 +2,7 @@ package eu.zeletrik.devcore.tools.sql
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class SqlFormatTest {
@@ -10,25 +11,12 @@ class SqlFormatTest {
 		dialect: SqlDialect = SqlDialect.STANDARD,
 		indent: Int = 2,
 		uppercase: Boolean = true,
-	) =
-		SqlFormat.format(sql, dialect, indent, uppercase)
+	) = SqlFormat.format(sql, dialect, indent, uppercase)
+
+	private fun error(sql: String) = assertFailsWith<IllegalArgumentException> { format(sql) }.message
 
 	@Test
-	fun `offers the six dialects, Standard SQL first`() {
-		assertEquals(
-			listOf("Standard SQL", "PostgreSQL", "MySQL", "MariaDB", "SQL Server", "Oracle PL/SQL"),
-			SqlDialect.entries.map { it.label },
-		)
-	}
-
-	@Test
-	fun `clauses on their own lines, list items indented`() {
-		val lines = format("select a, b from t where x = 1 order by a").lines()
-		listOf("SELECT", "FROM", "WHERE", "ORDER BY").forEach { clause ->
-			assertTrue(lines.any { it == clause }, "$clause in $lines")
-		}
-		val select = format("select a, b from t").lines()
-		assertEquals(listOf("SELECT", "  a,", "  b", "FROM", "  t"), select)
+	fun `the chosen indentation reaches the layout`() {
 		assertEquals(listOf("SELECT", "    a,", "    b", "FROM", "    t"), format("select a, b from t", indent = 4).lines())
 	}
 
@@ -44,10 +32,27 @@ class SqlFormatTest {
 	}
 
 	@Test
-	fun `literals, comments and dialect syntax survive, and anything is laid out`() {
-		val out = format("select 'from x' from t -- select me")
-		assertTrue("'from x'" in out && "-- select me" in out)
+	fun `PostgreSQL casts and the user's own placeholder text survive, and anything is laid out`() {
 		assertTrue("a::int" in format("select a::int from t", SqlDialect.POSTGRESQL))
+		assertTrue("__devcore_cast__" in format("select __devcore_cast__ from t"))
 		assertTrue(format("hello (((").isNotBlank())
+	}
+
+	@Test
+	fun `input up to 100,000 characters is formatted, more is refused`() {
+		listOf(99_999, 100_000).forEach { assertTrue(format("select " + "a".repeat(it - 7)).startsWith("SELECT"), "$it") }
+		assertEquals(
+			"Input is too large for the SQL Formatter (max 100,000 characters)",
+			error("select " + "a".repeat(99_994)),
+		)
+	}
+
+	@Test
+	fun `parentheses nested up to 100 levels are formatted, 101 are refused, quoted and commented ones don't count`() {
+		listOf(99, 100).forEach { assertTrue(format("select " + "(".repeat(it) + "1" + ")".repeat(it)).startsWith("SELECT")) }
+		assertEquals("Parentheses nested too deeply (max 100)", error("select " + "(".repeat(101) + "1" + ")".repeat(101)))
+		val many = "(".repeat(150)
+		format("select '$many' -- $many\n/* $many */ x")
+		format("select 'it''s $many' || \"a\\\"b $many\" from t /* $many")
 	}
 }

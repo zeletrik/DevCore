@@ -47,19 +47,55 @@ class RegexTesterTest {
 
 	@Test
 	fun flags() {
-		assertTrue(list("a", "aAa", RegexFlag.IGNORE_CASE).startsWith("3 matches"))
+		assertTrue(list("é", "É", RegexFlag.IGNORE_CASE).startsWith("1 match"))
 		assertTrue("[2, 3)" in list("^b", "a\nb", RegexFlag.MULTILINE))
 		assertTrue("[0, 3)" in list("a.b", "a\nb", RegexFlag.DOT_ALL))
 		assertTrue("[0, 2)" in list("a b # note", "ab", RegexFlag.COMMENTS))
 	}
 
 	@Test
-	fun replacement() {
+	fun `replacement follows Java's syntax`() {
 		assertEquals("x at ann", replace("(\\w+)@(\\w+)", "ann@x", "$2 at $1"))
 		assertEquals("<ann>", replace("(?<u>\\w+)@\\w+", "ann@x", "<\${u}>"))
 		assertEquals("a$", replace("\\d", "a1", "\\$"))
 		assertEquals("ab", replace("\\d", "a1b2", ""))
-		assertFailsWith<IllegalArgumentException> { replace("(a)", "a", "$2") }
+		assertEquals("ann@x", replace("(\\w+)@(\\w+)", "ann@x", "$0"))
+		assertEquals("x1", replace("(\\w+)@(\\w+)", "ann@x", "$21"))
+		assertEquals("j", replace("(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)", "abcdefghij", "$10"))
+		assertEquals("[]", replace("(a)|(b)", "b", "[$1]"))
+	}
+
+	@Test
+	fun `a bad replacement names the problem`() {
+		mapOf(
+			"$" to "Illegal group reference: group index is missing",
+			"$3" to "No group 3",
+			"\${x}" to "No group with name {x}",
+			"\${x" to "Named capturing group is missing trailing '}'",
+			"\\" to "Character to be escaped is missing",
+			"\$a" to "Illegal group reference",
+		).forEach { (bad, message) ->
+			assertEquals(message, assertFailsWith<IllegalArgumentException>(bad) { replace("(a)(b)", "ab", bad) }.message)
+		}
+	}
+
+	@Test
+	fun `replacement stops at the output cap and on the deadline`() {
+		val pattern = RegexTester.compile("a", emptySet())
+		val tooLarge = assertFailsWith<IllegalArgumentException> {
+			RegexTester.replace(pattern, "a".repeat(1_000), "x".repeat(5_001), RegexTester.deadline())
+		}
+		assertEquals("Output is too large (max 5,000,000 characters)", tooLarge.message)
+		val atCap = RegexTester.replace(pattern, "a".repeat(1_000), "x".repeat(5_000), RegexTester.deadline())
+		assertEquals(5_000_000, atCap.length)
+		assertFailsWith<RegexTester.Timeout> { RegexTester.replace(pattern, "aaa", "b", System.nanoTime() - 1) }
+	}
+
+	@Test
+	fun `values over 200 characters are cut, 199 and 200 are shown in full`() {
+		listOf(199, 200).forEach { assertEquals("#1 [0, $it) \"${"a".repeat(it)}\"", list("a+", "a".repeat(it)).lines()[1]) }
+		assertEquals("#1 [0, 201) \"${"a".repeat(200)}…\"", list("a+", "a".repeat(201)).lines()[1])
+		assertEquals("  1: [0, 300) \"${"a".repeat(200)}…\"", list("(a+)", "a".repeat(300)).lines()[2])
 	}
 
 	@Test

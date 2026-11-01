@@ -18,6 +18,7 @@ class BasicAuthTest {
 	fun decode() {
 		listOf(
 			"Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+			"Proxy-Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
 			"basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
 			" QWxhZGRpbjpvcGVuIHNlc2FtZQ== ",
 		).forEach {

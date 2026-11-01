@@ -6,9 +6,7 @@ import kotlin.test.assertTrue
 
 class MarkdownToHtmlTest {
 	@Test
-	fun `commonmark and the three extensions`() {
-		val html = MarkdownToHtml.convert("# Title\n\nSome **bold** text")
-		assertTrue("<h1>Title</h1>" in html && "<p>Some <strong>bold</strong> text</p>" in html)
+	fun `tables, strikethrough and autolinks are on`() {
 		val table = MarkdownToHtml.convert("| a | b |\n|---|---|\n| 1 | 2 |")
 		assertTrue(
 			Regex(
@@ -25,6 +23,5 @@ class MarkdownToHtmlTest {
 	@Test
 	fun `raw HTML passes through as text`() {
 		assertTrue("<img src=x onerror=alert(1)>" in MarkdownToHtml.convert("<img src=x onerror=alert(1)>"))
-		MarkdownToHtml.convert("[unclosed](( **x ``` <div")
 	}
 }

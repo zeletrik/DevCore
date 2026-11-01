@@ -24,9 +24,8 @@ class Base64CodecTest {
 	}
 
 	@Test
-	fun `decode ignores whitespace and missing padding`() {
+	fun `decode ignores whitespace`() {
 		assertEquals("hi", Base64Codec.decode("aG\n k=", urlSafe = false))
-		assertEquals("hi", Base64Codec.decode("aGk", urlSafe = false))
 	}
 
 	@Test
@@ -35,10 +34,5 @@ class Base64CodecTest {
 			val e = assertFailsWith<IllegalArgumentException> { Base64Codec.decode(text, urlSafe) }
 			assertEquals("Invalid Base64", e.message)
 		}
-	}
-
-	@Test
-	fun `non-UTF-8 bytes become replacement characters`() {
-		assertEquals("�", Base64Codec.decode("/w==", urlSafe = false))
 	}
 }

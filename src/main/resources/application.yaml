@@ -17,5 +17,8 @@ server:
 management:
   endpoints:
     web:
+      # Health only, for container healthchecks; nothing else is reachable and the index is off.
+      exposure:
+        include: health
       discovery:
         enabled: false

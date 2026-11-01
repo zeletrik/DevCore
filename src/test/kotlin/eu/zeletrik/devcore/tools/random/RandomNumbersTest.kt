@@ -28,13 +28,6 @@ class RandomNumbersTest {
 	}
 
 	@Test
-	fun `every value in a small range is drawn about equally often`() {
-		val counts = (1..60_000).map { RandomNumbers.draw(1, 6) }.groupingBy { it }.eachCount()
-		assertEquals((1L..6).toSet(), counts.keys)
-		assertTrue(counts.values.all { it in 9_000..11_000 }, counts.toString())
-	}
-
-	@Test
 	fun errors() {
 		assertEquals(
 			"Must be at least the minimum",

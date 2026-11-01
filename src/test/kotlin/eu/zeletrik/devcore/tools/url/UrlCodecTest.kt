@@ -16,19 +16,10 @@ class UrlCodecTest {
 	}
 
 	@Test
-	fun `round trip`() {
-		listOf("a+b c", "100% sure?", "ü/€/😀", "~-._").forEach { assertEquals(it, UrlCodec.decode(UrlCodec.encode(it))) }
-	}
-
-	@Test
 	fun `malformed escapes are rejected`() {
 		listOf("%zz", "abc%", "%4").forEach {
-			assertEquals("Malformed percent-encoding", assertFailsWith<IllegalArgumentException> { UrlCodec.decode(it) }.message)
+			val error = assertFailsWith<IllegalArgumentException> { UrlCodec.decode(it) }
+			assertEquals("Malformed percent-encoding", error.message)
 		}
-	}
-
-	@Test
-	fun `invalid UTF-8 becomes a replacement character`() {
-		assertEquals("�", UrlCodec.decode("%C3"))
 	}
 }

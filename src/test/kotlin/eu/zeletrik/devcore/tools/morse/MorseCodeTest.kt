@@ -22,4 +22,10 @@ class MorseCodeTest {
 		fails("Unknown Morse code '......'") { MorseCode.decode("......") }
 		fails("Morse code may contain only '.', '-', '/' and spaces") { MorseCode.decode(".x") }
 	}
+
+	@Test
+	fun `any Unicode space separates, and an unknown character is named whole`() {
+		assertEquals("SO", MorseCode.decode("...${Char(0xA0)}---"))
+		fails("No Morse code for '😀'") { MorseCode.encode("a😀") }
+	}
 }

@@ -43,4 +43,11 @@ class CaseConverterTest {
 			Locale.setDefault(saved)
 		}
 	}
+
+	@Test
+	fun `combining marks stay inside words`() {
+		assertEquals("cafe\u0301_au_lait", convert("cafe\u0301 au lait", Case.SNAKE))
+		val hindi = "नमस्ते दुनिया"
+		assertEquals(hindi.replace(' ', '-'), convert(hindi, Case.KEBAB))
+	}
 }

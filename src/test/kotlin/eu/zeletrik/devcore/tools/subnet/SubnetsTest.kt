@@ -31,6 +31,10 @@ class SubnetsTest {
 			"100.64.0.1" to "Shared address space",
 			"240.0.0.1" to "Reserved",
 			"0.0.0.0" to "Unspecified",
+			"192.0.2.1" to "Documentation",
+			"198.51.100.7" to "Documentation",
+			"203.0.113.9" to "Documentation",
+			"255.255.255.255" to "Limited broadcast",
 		).forEach { (address, type) -> assertEquals(type, fields(address)["Type"], address) }
 	}
 
@@ -47,7 +51,7 @@ class SubnetsTest {
 		assertEquals("Documentation", v6["Type"])
 		mapOf(
 			"2606:4700::1" to "Global unicast", "fd00::1" to "Unique local", "fe80::1" to "Link-local", "::1" to "Loopback",
-			"ff02::1" to "Multicast", "::" to "Unspecified", "::ffff:192.0.2.1" to "IPv4-mapped",
+			"ff02::1" to "Multicast", "::" to "Unspecified", "::ffff:192.0.2.1" to "IPv4-mapped", "100::1" to "Reserved",
 		).forEach { (address, type) -> assertEquals(type, fields(address)["Type"], address) }
 		assertEquals("::ffff:192.0.2.1", fields("::ffff:192.0.2.1")["Address"])
 	}
@@ -71,17 +75,17 @@ class SubnetsTest {
 			fields("10.1.2.3/0").let { listOf(it["Network"], it["Total addresses"]) },
 		)
 		assertEquals(listOf("10.1.2.3/32", "1"), fields("10.1.2.3/32").let { listOf(it["Network"], it["Total addresses"]) })
-		assertEquals("Prefix must be 0–32", error("10.1.2.3/33"))
+		listOf("10.1.2.3/33", "10.0.0.0/x", "10.0.0.0/-1").forEach { assertEquals("Prefix must be 0–32", error(it), it) }
 		assertEquals("2001:db8::/48", fields("2001:db8::1/48")["Network"])
 		assertEquals("340282366920938463463374607431768211456", fields("2001:db8::1/0")["Total addresses"])
 		assertEquals("1", fields("2001:db8::1/128")["Total addresses"])
-		assertEquals("Prefix must be 0–128", error("2001:db8::1/129"))
+		listOf("2001:db8::1/129", "::1/x").forEach { assertEquals("Prefix must be 0–128", error(it), it) }
 	}
 
 	@Test
-	fun `bad masks and host names are rejected, never resolved`() {
+	fun `bad masks, host names and broken literals are rejected, never resolved`() {
 		assertEquals("Netmask must be contiguous", error("192.168.1.0 255.0.255.0"))
-		listOf("example.com/24", "localhost", "fe80::1%eth0", "300.1.1.1").forEach {
+		listOf("example.com/24", "localhost", "fe80::1%eth0", "300.1.1.1", "2001:db8::zz").forEach {
 			assertEquals("Not an IPv4 or IPv6 address", error(it), it)
 		}
 	}

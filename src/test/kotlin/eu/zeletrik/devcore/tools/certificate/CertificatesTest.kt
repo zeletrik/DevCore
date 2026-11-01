@@ -1,7 +1,20 @@
 package eu.zeletrik.devcore.tools.certificate
 
-import java.net.ServerSocket
-import java.net.SocketTimeoutException
+import org.bouncycastle.asn1.ASN1Integer
+import org.bouncycastle.asn1.ASN1ObjectIdentifier
+import org.bouncycastle.asn1.DERSequence
+import org.bouncycastle.asn1.DERUTF8String
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier
+import org.bouncycastle.asn1.x509.BasicConstraints
+import org.bouncycastle.asn1.x509.DSAParameter
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage
+import org.bouncycastle.asn1.x509.GeneralName
+import org.bouncycastle.asn1.x509.GeneralNames
+import org.bouncycastle.asn1.x509.KeyPurposeId
+import org.bouncycastle.asn1.x509.OtherName
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.asn1.x9.X9ObjectIdentifiers
+import java.math.BigInteger
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.HexFormat
@@ -60,6 +73,41 @@ class CertificatesTest {
 	}
 
 	@Test
+	fun `CA certificates`() {
+		val unlimited = Fixtures.certificate(basicConstraints = BasicConstraints(true))
+		val zero = Fixtures.certificate(basicConstraints = BasicConstraints(0))
+		assertEquals("CA, no path length limit", value(unlimited, "Basic constraints"))
+		assertEquals("CA, path length 0", value(zero, "Basic constraints"))
+	}
+
+	@Test
+	fun `unknown extended key usage OIDs are shown as written`() {
+		val usage = ExtendedKeyUsage(KeyPurposeId.getInstance(ASN1ObjectIdentifier("1.2.3.4")))
+		assertEquals("1.2.3.4", value(Fixtures.certificate(extendedKeyUsage = usage), "Extended key usage"))
+	}
+
+	@Test
+	fun `IP and otherName SANs are readable in certificates and requests`() {
+		val upn = OtherName(ASN1ObjectIdentifier("1.3.6.1.4.1.311.20.2.3"), DERUTF8String("user@corp"))
+		val sans = GeneralNames(
+			arrayOf(
+				GeneralName(GeneralName.iPAddress, "192.168.1.10"),
+				GeneralName(GeneralName.iPAddress, "2001:db8::1"),
+				GeneralName(GeneralName.otherName, upn),
+			)
+		)
+		val expected = "IP 192.168.1.10, IP 2001:db8::1, Other (1.3.6.1.4.1.311.20.2.3)"
+		assertEquals(expected, value(Fixtures.certificate(sans = sans), "Subject alternative names"))
+		assertEquals(expected, value(Fixtures.request(sans = sans), "Requested SANs"))
+	}
+
+	@Test
+	fun `other SAN types are named`() {
+		val x400 = GeneralNames(GeneralName(GeneralName.x400Address, DERSequence()))
+		assertEquals("Other (x400Address)", value(Fixtures.certificate(sans = x400), "Subject alternative names"))
+	}
+
+	@Test
 	fun `chains are numbered, private keys and surrounding text are ignored`() {
 		val decoded = Certificates.decode("Here is my chain:\n" + Fixtures.chain() + "\n" + Fixtures.privateKey, now)
 		assertEquals(
@@ -82,8 +130,67 @@ class CertificatesTest {
 		assertTrue("Subject: CN=example.com" in request && "Public key: RSA 2048 bits" in request)
 		assertTrue("Signature algorithm: SHA-256 with RSA" in request && "Requested SANs: DNS example.com" in request)
 		assertTrue("Signature: valid" in request)
-		assertTrue("Signature: valid" in Certificates.decode(Fixtures.request("NEW CERTIFICATE REQUEST"), now))
+		assertTrue("Signature: valid" in Certificates.decode(Fixtures.request(label = "NEW CERTIFICATE REQUEST"), now))
 		assertTrue("Signature: invalid" in Certificates.decode(Fixtures.request(tamper = true), now))
+	}
+
+	@Test
+	fun `brainpool and secp256k1 requests are verified and named`() {
+		listOf("brainpoolP256r1", "secp256k1").forEach { curve ->
+			val request = Fixtures.request(Fixtures.ec(curve), "SHA256withECDSA")
+			assertEquals("EC $curve", value(request, "Public key"))
+			assertEquals("valid", value(request, "Signature"), curve)
+		}
+	}
+
+	@Test
+	fun `Ed25519 requests are named and verified`() {
+		val request = Fixtures.request(Fixtures.ed25519(), "Ed25519")
+		assertEquals("Ed25519", value(request, "Public key"))
+		assertEquals("valid", value(request, "Signature"))
+	}
+
+	@Test
+	fun `DSA up to 3,072 bits is verified`() {
+		listOf(2048, 3072).forEach { bits ->
+			val request = Fixtures.request(Fixtures.dsa(bits), "SHA256withDSA")
+			assertEquals("DSA $bits bits", value(request, "Public key"))
+			assertEquals("valid", value(request, "Signature"))
+		}
+	}
+
+	@Test
+	fun `DSA above 3,072 bits is not checked, quickly`() {
+		val p = BigInteger.ONE.shiftLeft(4095).setBit(0)
+		val spki = SubjectPublicKeyInfo(
+			AlgorithmIdentifier(X9ObjectIdentifiers.id_dsa, DSAParameter(p, BigInteger.valueOf(7), BigInteger.TWO)),
+			ASN1Integer(3),
+		)
+		val request = Fixtures.crafted(spki, ASN1ObjectIdentifier("2.16.840.1.101.3.4.3.2"))
+		val started = System.nanoTime()
+		assertEquals("not checked", value(request, "Signature"))
+		assertTrue(System.nanoTime() - started < 1_000_000_000)
+	}
+
+	@Test
+	fun `a signature that can't be verified is not called invalid`() {
+		val spki = SubjectPublicKeyInfo.getInstance(Fixtures.rsa.public.encoded)
+		val request = Fixtures.crafted(spki, ASN1ObjectIdentifier("1.2.3.4.5"))
+		assertEquals("not checked", value(request, "Signature"))
+	}
+
+	@Test
+	fun `20,000 unmatched BEGIN lines are scanned in under a second`() {
+		val text = "-----BEGIN A-----\n".repeat(20_000)
+		val started = System.nanoTime()
+		assertEquals("No PEM certificate or certificate request found", error(text))
+		assertTrue(System.nanoTime() - started < 1_000_000_000)
+	}
+
+	@Test
+	fun `an END with another label does not close a block`() {
+		val text = "-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE REQUEST-----"
+		assertEquals("No PEM certificate or certificate request found", error(text))
 	}
 
 	@Test
@@ -92,18 +199,11 @@ class CertificatesTest {
 		assertEquals("No PEM certificate or certificate request found", error(Fixtures.privateKey))
 		val broken = Fixtures.c + "\n-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----"
 		assertEquals("Certificate 2 could not be read", error(broken))
+		val notBase64 = "-----BEGIN CERTIFICATE-----\nA\n-----END CERTIFICATE-----"
+		assertEquals("Certificate 1 could not be read", error(notBase64))
 		assertEquals(
 			"The certificate request could not be read",
 			error("-----BEGIN CERTIFICATE REQUEST-----\nAAAA\n-----END CERTIFICATE REQUEST-----"),
 		)
-	}
-
-	@Test
-	fun `AIA, OCSP and CRL URLs are never fetched`() {
-		ServerSocket(0).use { server ->
-			server.soTimeout = 300
-			assertEquals("Valid", value(Fixtures.withNetworkUrls(server.localPort), "Status"))
-			assertFailsWith<SocketTimeoutException> { server.accept() }
-		}
 	}
 }

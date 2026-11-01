@@ -1,9 +1,11 @@
 package eu.zeletrik.devcore.tools.lines
 
 import kotlin.random.Random
+import kotlin.system.measureNanoTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class LineToolsTest {
 	private fun apply(lines: List<String>, options: LineOptions) =
@@ -50,5 +52,17 @@ class LineToolsTest {
 		val second = LineTools.apply(input.joinToString("\n"), LineOptions(order = Order.SHUFFLE), Random(2)).split("\n")
 		assertEquals(input.sorted(), first.sorted())
 		assertNotEquals(first, second)
+	}
+
+	@Test
+	fun `natural order treats only ASCII digits as numbers, and a prefix sorts first`() {
+		assertEquals(listOf("2番", "１番"), apply(listOf("１番", "2番"), LineOptions(order = Order.NATURAL)))
+		assertEquals(listOf("a", "a1"), apply(listOf("a1", "a"), LineOptions(order = Order.NATURAL)))
+	}
+
+	@Test
+	fun `natural sort of long digit runs is quick`() {
+		val lines = (1..10).joinToString("\n") { it.toString().repeat(99_999).take(99_999) }
+		assertTrue(measureNanoTime { LineTools.apply(lines, LineOptions(order = Order.NATURAL)) } < 1_000_000_000)
 	}
 }
