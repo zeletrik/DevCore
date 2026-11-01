@@ -24,16 +24,22 @@ class RepositoryFilesTest {
 		.map { it.path }
 
 	@Test
-	fun `the image is pinned, sized to its container and health-checked without extra packages`() {
+	fun `the image is pinned, layered, sized to its container and health-checked without extra packages`() {
 		val lines = read("Dockerfile").lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }
-		assertTrue(Regex("FROM eclipse-temurin:25-jre@sha256:[0-9a-f]{64}").matches(lines.first()), lines.first())
-		assertTrue("ENV JAVA_TOOL_OPTIONS=\"-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError\"" in lines)
-		assertTrue(lines.none { it.startsWith("RUN") })
-		val healthcheck = lines.dropWhile { !it.startsWith("HEALTHCHECK") }.take(2).joinToString(" ")
+		val froms = lines.filter { it.startsWith("FROM ") }
+		val base = Regex("FROM (--platform=\\\$BUILDPLATFORM )?(eclipse-temurin:25-jre@sha256:[0-9a-f]{64})( AS layers)?")
+		assertEquals(2, froms.size, froms.toString())
+		assertEquals(1, froms.map { base.matchEntire(it)?.groupValues?.get(2) }.distinct().size, "both stages share one digest")
+		assertTrue(froms.first().startsWith("FROM --platform=\$BUILDPLATFORM "), "layers are split on the build platform")
+		val runtime = lines.drop(lines.lastIndexOf(froms.last()))
+		assertTrue(runtime.none { it.startsWith("RUN") }, "the runtime stage needs no emulation")
+		assertTrue("ENV JAVA_TOOL_OPTIONS=\"-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError\"" in runtime)
+		assertTrue("USER 1000:1000" in runtime)
+		val healthcheck = runtime.dropWhile { !it.startsWith("HEALTHCHECK") }.take(2).joinToString(" ")
 		assertTrue("--interval=30s --timeout=5s --start-period=30s --retries=3" in healthcheck, healthcheck)
 		assertTrue("/dev/tcp/127.0.0.1/\${SERVER_PORT:-8080}" in healthcheck, healthcheck)
 		assertTrue("\$SERVER_SERVLET_CONTEXT_PATH" in healthcheck && "/actuator/health" in healthcheck, healthcheck)
-		assertEquals("ENTRYPOINT [\"java\", \"-jar\", \"/app/devcore.jar\"]", lines.last())
+		assertEquals("ENTRYPOINT [\"java\", \"-jar\", \"devcore.jar\"]", lines.last())
 	}
 
 	@Test

@@ -49,6 +49,7 @@ dependencyManagement {
 // Detekt is compiled against its own Kotlin; the project's newer Kotlin stays off its classpath.
 configurations.matching { it.name == "detekt" }.all {
 	resolutionStrategy.eachDependency {
+		@Suppress("UnstableApiUsage")
 		if (requested.group == "org.jetbrains.kotlin") useVersion(getSupportedKotlinVersion())
 	}
 }
