@@ -7,6 +7,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
+/** The cron dialects: Unix five fields, Spring six, Quartz six or seven. */
 enum class CronFlavor(val label: String) { UNIX("Unix"), SPRING("Spring"), QUARTZ("Quartz") }
 
 /** Field positions in Spring's syntax: second, minute, hour, day-of-month, month, day-of-week. */
@@ -51,6 +52,10 @@ object CronFlavors {
 	)
 	private val ordinal = Regex("#(\\d+)")
 
+	/**
+	 * One flavor into Spring syntax. Unix and Spring accept the `@hourly`…`@yearly` macros; `@reboot` has no schedule.
+	 * Quartz may add a seventh field, the year, but only `*` is supported there.
+	 */
 	fun parse(expression: String, flavor: CronFlavor): CronSchedule {
 		val text = expression.trim()
 		require(text != "@reboot") { "@reboot has no schedule" }
@@ -101,6 +106,8 @@ object CronFlavors {
 		val written = parts[DAY_OF_WEEK]
 		val dayOfWeek = when (written) {
 			"L" -> "SAT"
+			// Only a bare weekday digit moves down one: not an ordinal after `#`, not a step after `/`, not part of a
+			// longer number.
 			else ->
 				written.replace(Regex("^\\*/"), "1-7/").replace(Regex("(?<![#/0-9])[1-7]")) { (it.value.toInt() - 1).toString() }
 		}
@@ -108,8 +115,9 @@ object CronFlavors {
 	}
 
 	private fun fields(text: String, count: Int, message: String): List<String> =
-		text.split(Regex("\\s+")).also { require(it.size == count && it.none(String::isEmpty)) { message } }
+		text.split(Regex("\\s+")).also { require(it.size == count) { message } }
 
+	/** One Spring expression per day rule: under "either day", two that each wildcard one day field; their runs merge. */
 	private fun expressions(schedule: CronSchedule): List<CronExpression> {
 		val f = schedule.fields
 		val sets = if (schedule.eitherDay) listOf(f.with(DAY_OF_WEEK, "*"), f.with(DAY_OF_MONTH, "*")) else listOf(f)
@@ -123,7 +131,7 @@ object CronFlavors {
 		val runs =
 			if (schedule.fixedTime) wallClockRuns(schedule, now, zone, count) else zonedRuns(schedule, now, zone, count)
 		return runs.distinct()
-			.sortedWith(compareBy<ZonedDateTime> { it.toInstant() })
+			.sortedBy { it.toInstant() }
 			.take(count)
 			.map { it.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) }
 	}
@@ -141,7 +149,7 @@ object CronFlavors {
 	 */
 	private fun wallClockRuns(schedule: CronSchedule, now: Instant, zone: ZoneId, count: Int): List<ZonedDateTime> {
 		val rules = zone.rules
-		val from = now.atZone(zone).toLocalDateTime().minusDays(1)
+		val from = now.atZone(zone).toLocalDateTime()
 		return expressions(schedule).flatMap { expression ->
 			generateSequence(expression.next(from)) { expression.next(it) }
 				.map { local: LocalDateTime ->

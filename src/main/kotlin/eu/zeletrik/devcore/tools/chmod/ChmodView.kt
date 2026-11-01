@@ -18,19 +18,13 @@ import eu.zeletrik.devcore.shell.textLine
 @SpringComponent
 @UIScope
 class ChmodView : TextToolView<TextField>(Tool.CHMOD, textLine("Mode")) {
-	private var syncing = false
+	private val labels = listOf("Owner", "Group", "Others").flatMap { who ->
+		listOf("Read", "Write", "Execute").map { "$who $it" }
+	} + listOf("Setuid", "Setgid", "Sticky")
 
-	/** Bit → checkbox, in `rwxrwxrwx` order, then setuid, setgid, sticky. */
-	internal val boxes: Map<Int, Checkbox> = buildMap {
-		listOf("Owner", "Group", "Others").forEachIndexed { who, name ->
-			listOf("Read", "Write", "Execute").forEachIndexed { what, permission ->
-				put(1 shl (8 - (who * 3 + what)), Checkbox("$name $permission"))
-			}
-		}
-		put(0x800, Checkbox("Setuid"))
-		put(0x400, Checkbox("Setgid"))
-		put(0x200, Checkbox("Sticky"))
-	}.onEach { (_, box) -> box.addValueChangeListener { if (!syncing && it.isFromClient) fromBoxes() } }
+	/** Bit → checkbox, in the order of [Permissions.bits]; only a click writes back, never a server-side update. */
+	internal val boxes: Map<Int, Checkbox> = Permissions.bits.zip(labels.map { Checkbox(it) }).toMap()
+		.onEach { (_, box) -> box.addValueChangeListener { if (it.isFromClient) fromBoxes() } }
 	internal val octal = OutputField("Octal")
 	internal val symbolic = OutputField("Symbolic")
 	internal val command = OutputField("Command")
@@ -60,9 +54,7 @@ class ChmodView : TextToolView<TextField>(Tool.CHMOD, textLine("Mode")) {
 		octal.value = octalText
 		symbolic.value = Permissions.symbolic(mode)
 		command.value = "chmod $octalText <file>"
-		syncing = true
 		boxes.forEach { (bit, box) -> box.value = mode and bit != 0 }
-		syncing = false
 	}
 
 	override fun clearOutputs() = listOf(octal, symbolic, command).forEach { it.clear() }

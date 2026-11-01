@@ -2,7 +2,9 @@ package eu.zeletrik.devcore.tools.base64
 
 import java.util.Base64
 
+/** Text as Base64 and back, in the standard or the URL-safe alphabet. */
 object Base64Codec {
+	/** Standard Base64 is padded; the URL-safe variant drops the padding, as JWTs and most URL uses expect. */
 	fun encode(text: String, urlSafe: Boolean): String {
 		val encoder = if (urlSafe) Base64.getUrlEncoder().withoutPadding() else Base64.getEncoder()
 		return encoder.encodeToString(text.toByteArray(Charsets.UTF_8))

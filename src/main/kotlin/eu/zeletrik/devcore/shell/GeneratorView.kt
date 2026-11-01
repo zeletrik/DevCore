@@ -4,7 +4,6 @@ import com.vaadin.flow.component.AttachEvent
 import com.vaadin.flow.component.button.Button
 import com.vaadin.flow.component.button.ButtonVariant
 import com.vaadin.flow.component.html.Span
-import com.vaadin.flow.component.shared.HasValidationProperties
 
 /**
  * Options → Generate → output. The first output comes on first attach, never in the constructor, so a hidden
@@ -35,11 +34,6 @@ abstract class GeneratorView(tool: Tool) : ToolView(tool) {
 		if (error !is StackOverflowError && error !is RuntimeException) throw error
 		logFailure(tool, error)
 		generateError.isVisible = true
-	}
-
-	protected fun mark(field: HasValidationProperties, message: String) {
-		field.errorMessage = message
-		field.isInvalid = true
 	}
 
 	override fun onAttach(attachEvent: AttachEvent) {

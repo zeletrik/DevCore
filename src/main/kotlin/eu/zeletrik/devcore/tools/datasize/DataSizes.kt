@@ -32,6 +32,7 @@ enum class DataUnit(val label: String, base: Int, power: Int, bytes: Boolean) {
 private const val MAX_DIGITS = 30
 private const val DECIMALS = 6
 
+/** One value in every [DataUnit], exact to six decimals. */
 object DataSizes {
 	/** One `<value> <unit>` line per unit: exact, rounded half-even to at most 6 decimals, plain notation. */
 	fun convert(text: String, unit: DataUnit): String {
@@ -42,7 +43,7 @@ object DataSizes {
 		val bits = value * unit.bits
 		return DataUnit.entries.joinToString("\n") { target ->
 			val amount = bits.divide(target.bits, DECIMALS, RoundingMode.HALF_EVEN).stripTrailingZeros()
-			"${if (amount.signum() == 0) "0" else amount.toPlainString()} ${target.label}"
+			"${amount.toPlainString()} ${target.label}"
 		}
 	}
 }

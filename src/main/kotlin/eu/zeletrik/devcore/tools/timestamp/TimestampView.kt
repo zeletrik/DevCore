@@ -1,8 +1,6 @@
 package eu.zeletrik.devcore.tools.timestamp
 
 import com.vaadin.flow.component.button.Button
-import com.vaadin.flow.component.orderedlayout.FlexComponent
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout
 import com.vaadin.flow.component.textfield.TextArea
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
@@ -11,12 +9,15 @@ import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
+import eu.zeletrik.devcore.shell.optionsRow
 import eu.zeletrik.devcore.shell.textArea
 import eu.zeletrik.devcore.shell.textLine
+import eu.zeletrik.devcore.shell.zoneId
 import eu.zeletrik.devcore.shell.zonePicker
 import java.time.Instant
 import java.time.ZoneId
 
+/** Unix time or a date in every common form, in a chosen zone, plus a custom pattern. */
 @Route("timestamp-converter", layout = MainLayout::class)
 @SpringComponent
 @UIScope
@@ -38,12 +39,12 @@ class TimestampView : TextToolView<TextArea>(Tool.TIMESTAMP, textArea("Timestamp
 	internal val custom = OutputField("Custom")
 
 	init {
-		add(HorizontalLayout(zone, now).apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE })
+		add(optionsRow(zone, now))
 		add(input, seconds, millis, utc, zoned, relative, rfc1123, sql, format, custom)
 	}
 
 	override fun render(text: String) {
-		val zoneId = ZoneId.of(zone.value ?: "UTC")
+		val zoneId = zone.zoneId
 		val instant = Timestamps.parse(text, zoneId)
 		val converted = Timestamps.convert(instant, zoneId, Instant.now())
 		seconds.value = converted.seconds.toString()

@@ -24,7 +24,7 @@ class InputHandlingFixtureView : TextToolView<TextArea>(Tool.BASE64, textArea("I
 	}
 
 	override fun render(text: String) {
-		val n = boundedInt(count, 1..10) ?: return
+		val n = boundedInt(count) ?: return
 		if (key.value == "bad") throw FieldError("key", "Bad key")
 		main.value = text.repeat(n)
 		dependent.value = optional(extra) {

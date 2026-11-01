@@ -1,7 +1,14 @@
 package eu.zeletrik.devcore.tools.stringescape
 
+import java.util.HexFormat
+
+/** Which language's string literal rules apply. */
 enum class Flavor(val label: String) { JSON("JSON"), JAVA("Java"), JAVASCRIPT("JavaScript") }
 
+/**
+ * Shared escapes plus per-flavor ones: JSON `\/`; Java `\'`, `\s` and octal; JavaScript `\'`, `\v`, `\xHH`, `\u{…}`,
+ * `\0` and line continuations.
+ */
 object StringEscapes {
 	private const val HEX = 16
 	private const val OCTAL = 8
@@ -87,6 +94,7 @@ object StringEscapes {
 			position = end + 1
 		}
 
+		// NOTE: digits are checked first because toInt accepts a leading sign, which no escape does.
 		private fun fourDigits() {
 			val hex = text.substring(position, minOf(position + UNICODE_DIGITS, text.length))
 			if (hex.length < UNICODE_DIGITS || !hex.all(::isHex)) invalid()
@@ -126,5 +134,5 @@ object StringEscapes {
 			throw IllegalArgumentException("Invalid escape sequence at position ${backslashAt + 1}")
 	}
 
-	private fun isHex(c: Char) = c in '0'..'9' || c in 'a'..'f' || c in 'A'..'F'
+	private fun isHex(c: Char) = HexFormat.isHexDigit(c.code)
 }

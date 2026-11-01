@@ -12,6 +12,7 @@ import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.modeGroup
 import eu.zeletrik.devcore.shell.textArea
 
+/** Percent-encodes or decodes text. */
 @Route("url-encoder", layout = MainLayout::class)
 @SpringComponent
 @UIScope

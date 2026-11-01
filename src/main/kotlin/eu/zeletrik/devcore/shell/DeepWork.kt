@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 private const val STACK_BYTES = 16L shl 20
 
 /**
- * Runs deeply recursive tool work (regex, SQL formatting, JSONPath, data formats, DER parsing) on platform threads
+ * Runs deeply recursive tool work (parsers and formatters that recurse once per nesting level) on platform threads
  * with a large stack; the caller blocks until the result is in. Tasks take and return plain values and never touch
  * Vaadin components or the session, which belong to the request thread.
  */

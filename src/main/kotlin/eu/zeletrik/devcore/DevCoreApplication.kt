@@ -29,6 +29,7 @@ import javax.imageio.ImageIO
 	backgroundColor = Project.THEME,
 	offline = false,
 )
+/** The Spring Boot entry point and Vaadin app shell: theme, color scheme, app manifest and page metadata. */
 class DevCoreApplication : AppShellConfigurator {
 	override fun configurePage(settings: AppShellSettings) {
 		settings.addFavIcon("icon", "icons/favicon.svg", "any")

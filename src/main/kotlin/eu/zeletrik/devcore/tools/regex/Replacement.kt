@@ -4,6 +4,8 @@ import java.util.regex.Pattern
 
 private const val DECIMAL = 10
 
+// NOTE: parsed up front rather than via Matcher.appendReplacement, so a bad reference is reported even when nothing
+// matches.
 /** A replacement string split into literal text and group references, with Java's `Matcher` syntax and errors. */
 internal object Replacement {
 	sealed interface Part

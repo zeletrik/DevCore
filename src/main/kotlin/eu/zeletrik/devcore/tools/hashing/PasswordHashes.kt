@@ -8,6 +8,7 @@ import org.bouncycastle.crypto.params.Argon2Parameters
 import java.security.MessageDigest
 import java.util.Base64
 
+/** The password hashes offered. */
 enum class HashAlgorithm(val label: String) { BCRYPT("bcrypt"), ARGON2ID("Argon2id") }
 
 /** bcrypt and Argon2 through Bouncy Castle's lightweight API (no JCA provider is registered). */
@@ -37,6 +38,7 @@ object PasswordHashes {
 			"""[$](?<salt>[A-Za-z0-9+/]+)[$](?<hash>[A-Za-z0-9+/]+)""",
 	)
 
+	/** OpenBSD `$2b$`; bcrypt silently truncates at 72 bytes, so longer passwords are refused rather than weakened. */
 	fun bcrypt(password: String, cost: Int): String {
 		val bytes = password.toByteArray(Charsets.UTF_8)
 		require(bytes.size <= BCRYPT_MAX_BYTES) { "bcrypt uses at most 72 bytes; this password has ${bytes.size}" }
@@ -79,6 +81,8 @@ object PasswordHashes {
 
 	private fun verifyArgon2(password: String, match: MatchResult): Boolean {
 		fun part(name: String) = match.groups[name]!!.value
+		// m, t and p as the PHC string names them: memory in KiB, iterations and parallelism. A value too big for an
+		// Int is too costly by definition.
 		val m = part("memory").toIntOrNull() ?: reject(TOO_COSTLY)
 		val t = part("iterations").toIntOrNull() ?: reject(TOO_COSTLY)
 		// Bouncy Castle allocates max(m, 8·p) KiB, so parallelism needs its own cap before anything runs.

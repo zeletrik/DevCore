@@ -1,20 +1,14 @@
 package eu.zeletrik.devcore.tools.urlparser
 
-import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.net.URISyntaxException
 import java.net.URLDecoder
-import java.util.HexFormat
-
-private const val HEX = 16
-
-/** A percent escape: `%` and two hex digits. */
-private const val ESCAPE_LENGTH = 3
 
 /** RFC 3986 parsing with java.net.URI; the host is shown, never resolved. */
 object UrlParser {
 	private val defaultPorts = mapOf("http" to 80, "https" to 443, "ws" to 80, "wss" to 443, "ftp" to 21)
 
+	/** One line per part, then the query parameters decoded; the host is shown exactly as written. */
 	fun describe(text: String): String {
 		val uri = try {
 			URI(text.trim())
@@ -23,11 +17,7 @@ object UrlParser {
 		}
 		require(uri.isAbsolute) { "Not an absolute URL (it needs a scheme like https://)" }
 		val authority = authority(uri)
-		val port = when {
-			authority.port != null -> authority.port
-			defaultPorts[uri.scheme.lowercase()] != null -> "default (${defaultPorts[uri.scheme.lowercase()]})"
-			else -> null
-		}
+		val port = authority.port ?: defaultPorts[uri.scheme.lowercase()]?.let { "default ($it)" }
 		val lines = listOfNotNull(
 			"Scheme: ${uri.scheme}",
 			authority.userInfo?.let { "Username: ${percentDecoded(it.substringBefore(':'))}" },
@@ -45,8 +35,8 @@ object UrlParser {
 		return (lines + query).joinToString("\n")
 	}
 
-	/** Percent-decoding with `+` as a space; a malformed escape is shown as written. */
-	private fun decode(value: String) = runCatching { URLDecoder.decode(value, Charsets.UTF_8) }.getOrDefault(value)
+	/** Query percent-decoding, `+` as a space; java.net.URI already rejected any malformed escape. */
+	private fun decode(value: String): String = URLDecoder.decode(value, Charsets.UTF_8)
 
 	private class Authority(val userInfo: String?, val host: String?, val port: String?)
 
@@ -72,20 +62,6 @@ object UrlParser {
 		return Authority(userInfo, host.ifEmpty { null }, portText.takeIf { hasPort && it.isNotEmpty() })
 	}
 
-	/** Percent-decoding as UTF-8 that leaves `+` alone (it only means a space in query strings). */
-	private fun percentDecoded(value: String): String {
-		val bytes = ByteArrayOutputStream()
-		var i = 0
-		while (i < value.length) {
-			val hex = value.substring(i + 1, minOf(i + ESCAPE_LENGTH, value.length))
-			if (value[i] == '%' && hex.length == 2 && hex.all { HexFormat.isHexDigit(it.code) }) {
-				bytes.write(hex.toInt(HEX))
-				i += ESCAPE_LENGTH
-			} else {
-				bytes.write(value[i].toString().toByteArray(Charsets.UTF_8))
-				i++
-			}
-		}
-		return bytes.toString(Charsets.UTF_8)
-	}
+	/** Userinfo percent-decoding, where `+` is a plain character. */
+	private fun percentDecoded(value: String): String = URLDecoder.decode(value.replace("+", "%2B"), Charsets.UTF_8)
 }

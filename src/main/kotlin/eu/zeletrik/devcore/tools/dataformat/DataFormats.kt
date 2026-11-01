@@ -21,9 +21,9 @@ import tools.jackson.dataformat.yaml.YAMLMapper
 import tools.jackson.dataformat.yaml.YAMLParser
 import tools.jackson.dataformat.yaml.YAMLWriteFeature
 import tools.jackson.dataformat.yaml.util.StringQuotingChecker
-import java.math.BigInteger
 import java.util.Base64
 
+/** The data formats the converter reads and writes. */
 enum class Format(val label: String) { JSON("JSON"), YAML("YAML"), TOML("TOML"), PROPERTIES("Properties"), CSV("CSV") }
 
 /** Every conversion goes through one tree: member order and exact numbers survive, and nothing is dropped silently. */
@@ -40,19 +40,11 @@ object DataFormats {
 	private val csv = CsvMapper.builder().enable(CsvReadFeature.FAIL_ON_MISSING_COLUMNS).build()
 	private val props = JavaPropsMapper()
 	private val propsSchema = JavaPropsSchema.emptySchema().withWriteIndexUsingMarkers(true).withFirstArrayOffset(0)
-	private val longs = BigInteger.valueOf(Long.MIN_VALUE)..BigInteger.valueOf(Long.MAX_VALUE)
 
-	fun convert(text: String, from: Format, to: Format): String {
-		val tree = try {
-			read(text, from)
-		} catch (e: JacksonException) {
-			throw invalid(e)
-		} ?: return ""
-		return try {
-			write(tree, to)
-		} catch (e: JacksonException) {
-			throw invalid(e)
-		}
+	fun convert(text: String, from: Format, to: Format): String = try {
+		read(text, from)?.let { write(it, to) } ?: ""
+	} catch (e: JacksonException) {
+		throw invalid(e)
 	}
 
 	private fun invalid(e: JacksonException) =
@@ -68,7 +60,6 @@ object DataFormats {
 		Format.PROPERTIES -> props.readerFor(JsonNode::class.java).with(propsSchema).readValue(text)
 		Format.CSV -> csvRows(withoutTrailingBlankLines(text))
 	}
-
 
 	private fun write(tree: JsonNode, to: Format): String = when (to) {
 		Format.JSON -> JsonFormatter.format(json.writeValueAsString(tree))
@@ -93,7 +84,7 @@ object DataFormats {
 	private fun checkToml(node: JsonNode, path: String) {
 		when {
 			node.isNull -> throw IllegalArgumentException("TOML has no null value (at '$path')")
-			node.isIntegralNumber && node.bigIntegerValue() !in longs ->
+			node.isIntegralNumber && !node.canConvertToLong() ->
 				throw IllegalArgumentException("TOML integers are 64-bit (at '$path')")
 			node.isObject ->
 				node.properties().forEach { (name, child) -> checkToml(child, if (path.isEmpty()) name else "$path.$name") }
@@ -122,10 +113,9 @@ object DataFormats {
 		if (text.isEmpty()) return null
 		val rows = csv.readerFor(Array<String>::class.java).with(CsvReadFeature.WRAP_AS_ARRAY).readValues<Array<String>>(text)
 		val header = rows.nextValue()
-		header.groupingBy { it }
-			.eachCount().entries
-			.firstOrNull { it.value > 1 }
-			?.let { throw IllegalArgumentException("Duplicate column '${it.key}'") }
+		val seen = hashSetOf<String>()
+		val duplicate = header.firstOrNull { !seen.add(it) }
+		require(duplicate == null) { "Duplicate column '$duplicate'" }
 		val array = nodes.arrayNode()
 		while (rows.hasNextValue()) {
 			val line = rows.currentLocation().lineNr
@@ -139,7 +129,7 @@ object DataFormats {
 		return array
 	}
 
-	/** A text area usually ends with a newline; trailing blank lines are not rows (a loop, so any number is cheap). */
+	/** A text area usually ends with a newline, and trailing blank lines are not rows. Only the blank tail is scanned. */
 	private fun withoutTrailingBlankLines(text: String): String {
 		var end = text.length
 		while (true) {

@@ -39,12 +39,7 @@ object JsonPathTester {
 		val document = try {
 			mapper.readTree(json)
 		} catch (e: JacksonException) {
-			throw IllegalArgumentException(
-				e.location?.let {
-					"Invalid JSON at line ${it.lineNr}, column ${it.columnNr}: ${e.originalMessage}"
-				} ?: "Invalid JSON: ${e.originalMessage}",
-				e,
-			)
+			throw JsonFormatter.invalid(e)
 		}
 		val matches: JsonNode = compiled.read(document, configuration) ?: mapper.createArrayNode()
 		// The compact form is capped too: `$..*` repeats every subtree, so even it can grow far past the input.

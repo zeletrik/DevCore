@@ -19,6 +19,7 @@ import eu.zeletrik.devcore.shell.textLine
 
 private const val PICK_INTERVAL_MS = 150
 
+/** Any CSS color notation in, every notation out, with a native picker that writes back into the input. */
 @Route("color-converter", layout = MainLayout::class)
 @SpringComponent
 @UIScope

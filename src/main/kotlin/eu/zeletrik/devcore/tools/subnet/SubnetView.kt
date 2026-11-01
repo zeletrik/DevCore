@@ -10,6 +10,7 @@ import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textLine
 
+/** IPv4 and IPv6 network details from an address, CIDR or netmask. */
 @Route("subnet-calculator", layout = MainLayout::class)
 @SpringComponent
 @UIScope

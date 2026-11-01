@@ -10,13 +10,15 @@ object NatoAlphabet {
 	private val digits = listOf("Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine")
 
 	// One token per extended grapheme cluster: a flag or a letter with its accent is one character to a reader.
-	fun spell(text: String): String = Regex("\\s+|\\X").findAll(text.trim()).joinToString(" ") { match ->
+	private val tokens = Regex("\\s+|\\X")
+
+	fun spell(text: String): String = tokens.findAll(text.trim()).joinToString(" ") { match ->
 		val token = match.value
 		val c = token[0]
 		when {
 			c.isWhitespace() -> "/"
 			// Only a lone ASCII letter or digit has a code word; an accented letter stays as written, composed or not.
-			token.length == 1 && c.uppercaseChar() in 'A'..'Z' -> words[c.uppercaseChar() - 'A']
+			token.length == 1 && (c in 'a'..'z' || c in 'A'..'Z') -> words[c.uppercaseChar() - 'A']
 			token.length == 1 && c in '0'..'9' -> digits[c - '0']
 			else -> token
 		}

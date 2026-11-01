@@ -67,9 +67,9 @@ object CronDescriber {
 
 	private fun month(value: String): String? = when {
 		value == "*" || value == "?" -> null
-		"/" in value -> "in " + list(expand(value, 1..months.size, ::monthNumber).distinct().map { months[it - 1] })
+		"/" in value -> "in " + andList(expand(value, 1..months.size, ::monthNumber).distinct().map { months[it - 1] })
 		"-" in value && "," !in value -> value.split("-").let { (a, b) -> "${monthName(a)} through ${monthName(b)}" }
-		else -> "in " + list(value.split(",").map(::monthName))
+		else -> "in " + andList(value.split(",").map(::monthName))
 	}
 
 	private fun monthNumber(value: String) = value.toIntOrNull() ?: (monthNames.indexOf(value.uppercase()) + 1)
@@ -93,7 +93,10 @@ private object Days {
 		else -> "on " + field(value, "day", "days") + " of the month"
 	}
 
-	/** Day-of-week in the user's own numbering: Quartz counts 1–7 from Sunday, Unix and Spring 0–7 with 0 and 7 Sunday. */
+	/**
+	 * Day-of-week in the user's own numbering: Quartz counts 1–7 from Sunday; Unix and Spring count 0–7, with 0 and 7
+	 * both Sunday.
+	 */
 	fun dayOfWeek(value: String, flavor: CronFlavor): String? {
 		val quartz = flavor == CronFlavor.QUARTZ
 		val items = value.split(",")
@@ -101,16 +104,16 @@ private object Days {
 			value == "*" || value == "?" -> null
 			quartz && value == "L" -> "on Saturday"
 			items.any { it.endsWith("L") || "#" in it } ->
-				"on " + list(items.map { weekdayOfMonth(it, quartz) }) + " of the month"
+				"on " + andList(items.map { weekdayOfMonth(it, quartz) }) + " of the month"
 			"/" in value -> {
 				// `*` covers 0–6 in Unix (from Sunday), 1–7 in Spring (from Monday) and 1–7 in Quartz (from Sunday).
 				val all = if (flavor == CronFlavor.UNIX) 0..6 else 1..7
 				val numbers = expand(value, all) { dayNumber(it, quartz) }.distinctBy { dayIndex(it, quartz) }
-				"on " + list(numbers.map { days[dayIndex(it, quartz)] })
+				"on " + andList(numbers.map { days[dayIndex(it, quartz)] })
 			}
 			"-" in value && "," !in value ->
 				value.split("-").let { (a, b) -> "${dayName(a, quartz)} through ${dayName(b, quartz)}" }
-			else -> "on " + list(items.map { dayName(it, quartz) })
+			else -> "on " + andList(items.map { dayName(it, quartz) })
 		}
 	}
 
@@ -124,9 +127,11 @@ private object Days {
 		else -> dayName(item, quartz)
 	}
 
+	/** A day name as the user's own number: Quartz 1–7 from Sunday, Unix and Spring 0–6; a number passes through. */
 	private fun dayNumber(value: String, quartz: Boolean): Int =
 		value.toIntOrNull() ?: (dayNames.indexOf(value.uppercase()) + if (quartz) 1 else 0)
 
+	/** Index into [days] (Sunday first) for a number in the user's numbering; 7 wraps to Sunday. */
 	private fun dayIndex(number: Int, quartz: Boolean) = Math.floorMod(if (quartz) number - 1 else number, days.size)
 
 	private fun dayName(value: String, quartz: Boolean): String {
@@ -138,7 +143,7 @@ private object Days {
 /** Every value a list of wildcards, values and ranges, each optionally stepped, selects within [all]. */
 private fun expand(field: String, all: IntRange, value: (String) -> Int): List<Int> =
 	field.split(",").flatMap { item ->
-		val step = item.substringAfter('/', "1").toInt()
+		val stride = item.substringAfter('/', "1").toInt()
 		val range = item.substringBefore('/')
 		val (from, to) = when {
 			range == "*" -> all.first to all.last
@@ -146,7 +151,7 @@ private fun expand(field: String, all: IntRange, value: (String) -> Int): List<I
 			"/" in item -> value(range) to all.last
 			else -> value(range) to value(range)
 		}
-		(from..to step step).toList()
+		(from..to step stride).toList()
 	}.sorted()
 
 /** One field the special cases don't cover: `every n units`, `unit a`, `units a through b`, `units a, b and c`. */
@@ -155,12 +160,13 @@ private fun field(value: String, unit: String, units: String): String = when {
 	value.startsWith("*/") -> "every ${value.removePrefix("*/")} $units"
 	"/" in value -> value.split("/").let { (range, step) -> "every $step $units, " + field(range, unit, units) }
 	isNumber(value) -> "$unit $value"
-	"," in value -> "$units " + list(value.split(",").map { it.replace("-", " through ") })
+	"," in value -> "$units " + andList(value.split(",").map { it.replace("-", " through ") })
 	"-" in value -> "$units " + value.replace("-", " through ")
 	else -> "$unit $value"
 }
 
-private fun list(items: List<String>) =
+/** `a`, `a and b`, `a, b and c`. */
+private fun andList(items: List<String>) =
 	if (items.size == 1) items[0] else items.dropLast(1).joinToString(", ") + " and " + items.last()
 
 private fun isNumber(value: String) = number.matches(value)

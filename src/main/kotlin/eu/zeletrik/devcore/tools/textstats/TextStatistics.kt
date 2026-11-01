@@ -3,10 +3,17 @@ package eu.zeletrik.devcore.tools.textstats
 import java.text.BreakIterator
 import java.util.Locale
 
+/**
+ * Counts as a reader would make them: characters are code points; words and sentences follow Unicode break rules
+ * (root locale) and must contain a letter or digit; lines are newlines plus one; paragraphs are separated by blank
+ * lines.
+ */
 object TextStatistics {
+	private val paragraphBreak = Regex("\\n\\s*\\n")
+
 	fun describe(text: String): String {
 		val codePoints = text.codePoints().toArray()
-		val paragraphs = text.split(Regex("\\n\\s*\\n")).count { it.isNotBlank() }
+		val paragraphs = text.split(paragraphBreak).count { it.isNotBlank() }
 		return listOf(
 			"Characters" to codePoints.size,
 			"Characters without whitespace" to codePoints.count { !Character.isWhitespace(it) },

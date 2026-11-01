@@ -2,21 +2,21 @@ package eu.zeletrik.devcore.tools.diff
 
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
-import com.github.difflib.patch.ChangeDelta
 import com.github.difflib.patch.Chunk
-import com.github.difflib.patch.DeleteDelta
 import com.github.difflib.patch.DeltaType
-import com.github.difflib.patch.EqualDelta
-import com.github.difflib.patch.InsertDelta
 import com.github.difflib.patch.Patch
 import eu.zeletrik.devcore.tools.FieldError
 import java.util.Locale
 
+/** A unified diff and the one-line summary shown above it: `No differences` or `+added −removed lines`. */
 data class Diff(val unified: String, val status: String)
 
+/** Line-by-line diff of two texts as a unified patch; each side is capped at [MAX_LINES] lines. */
 object TextDiff {
-	const val MAX_LINES = 10_000
+	private const val MAX_LINES = 10_000
+	private const val TOO_MANY = "Too many lines to compare (max 10,000)"
 	private val MINUS = Char(0x2212)
+	private val whitespace = Regex("\\s+")
 
 	// NOTE: the default Myers algorithm on purpose — the linear-space variant emits a changed line as
 	// insert-then-delete. Its worst case at the line cap (~2 s, ~140 MiB) is accepted.
@@ -40,36 +40,18 @@ object TextDiff {
 		return Diff(unified, "+$added $MINUS$removed lines")
 	}
 
-	private val whitespace = Regex("\\s+")
-
-	private const val TOO_MANY = "Too many lines to compare (max 10,000)"
-
 	/** Lines without one trailing newline; null when there are more than [MAX_LINES]. */
 	private fun lines(text: String): List<String>? {
 		val body = text.removeSuffix("\n")
-		val lines = if (body.isEmpty() && text.length <= 1) emptyList() else body.split("\n")
+		val lines = if (body.isEmpty()) emptyList() else body.split("\n")
 		return lines.takeIf { it.size <= MAX_LINES }
 	}
 
 	/** The same deltas over the original lines, so the unified diff prints what the user wrote. */
-	private fun asWritten(patch: Patch<String>, a: List<String>, b: List<String>): Patch<String> = Patch<String>().apply {
-		patch.deltas.forEach { delta ->
-			val source = Chunk(
-				delta.source.position,
-				a.subList(delta.source.position, delta.source.position + delta.source.size()),
-			)
-			val target = Chunk(
-				delta.target.position,
-				b.subList(delta.target.position, delta.target.position + delta.target.size()),
-			)
-			addDelta(
-				when (delta.type) {
-					DeltaType.DELETE -> DeleteDelta(source, target)
-					DeltaType.INSERT -> InsertDelta(source, target)
-					DeltaType.EQUAL -> EqualDelta(source, target)
-					else -> ChangeDelta(source, target)
-				},
-			)
-		}
+	private fun asWritten(patch: Patch<String>, a: List<String>, b: List<String>) = Patch<String>().apply {
+		patch.deltas.forEach { addDelta(it.withChunks(it.source.over(a), it.target.over(b))) }
 	}
+
+	/** This chunk's span taken from [lines] instead of the normalized copies it was computed on. */
+	private fun Chunk<String>.over(lines: List<String>) = Chunk(position, lines.subList(position, position + size()))
 }

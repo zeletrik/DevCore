@@ -14,7 +14,9 @@ import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textArea
 import eu.zeletrik.devcore.shell.textLine
 import eu.zeletrik.devcore.tools.FieldError
+import java.util.regex.Pattern
 
+/** Lists matches and groups, and optionally the text with every match replaced. */
 @Route("regex-tester", layout = MainLayout::class)
 @SpringComponent
 @UIScope
@@ -38,16 +40,19 @@ class RegexView : TextToolView<TextArea>(Tool.REGEX, textArea("Text")) {
 
 	override fun render(text: String) {
 		val compiled = RegexTester.compile(pattern.value, flags.value)
+		val deadline = RegexTester.deadline()
 		try {
-			val deadline = RegexTester.deadline()
 			matches.value = DeepWork.run { RegexTester.list(compiled, text, deadline) }
-			replaced.value = if (!replace.value) "" else optional(replacement) {
-				val with = replacement.value
-				DeepWork.run { RegexTester.replace(compiled, text, with, deadline) }
-			} ?: ""
+			replaced.value = if (replace.value) replaceAll(compiled, text, deadline) else ""
 		} catch (_: RegexTester.Timeout) {
 			throw FieldError("pattern", RegexTester.STOPPED)
 		}
+	}
+
+	/** Runs under [optional], so a bad replacement string marks its own field and leaves this output empty. */
+	private fun replaceAll(compiled: Pattern, text: String, deadline: Long): String {
+		val with = replacement.value
+		return optional(replacement) { DeepWork.run { RegexTester.replace(compiled, text, with, deadline) } } ?: ""
 	}
 
 	override fun clearOutputs() {

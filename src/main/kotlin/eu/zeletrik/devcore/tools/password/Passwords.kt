@@ -5,6 +5,7 @@ import kotlin.math.floor
 import kotlin.math.log2
 import kotlin.random.asKotlinRandom
 
+/** The character sets a password draws from. */
 enum class CharSet(val label: String, val chars: String) {
 	LOWER("Lowercase", "abcdefghijklmnopqrstuvwxyz"),
 	UPPER("Uppercase", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
@@ -12,6 +13,7 @@ enum class CharSet(val label: String, val chars: String) {
 	SYMBOLS("Symbols", "!#$%&()*+,-./:;<=>?@[]^_{|}~"),
 }
 
+/** Generation only; every draw comes from [secureRandom]. */
 object Passwords {
 	private const val AMBIGUOUS = "Il1O0o|"
 	private val random = secureRandom.asKotlinRandom()
@@ -30,6 +32,7 @@ object Passwords {
 	fun password(length: Int, sets: Set<CharSet>, excludeAmbiguous: Boolean): String {
 		require(sets.isNotEmpty()) { "Select at least one character set" }
 		val pools = pools(sets, excludeAmbiguous)
+		require(length >= pools.size) { "Length must be at least the number of character sets" }
 		val all = pools.joinToString("")
 		val chars = pools.map { it.random(random) } + List(length - pools.size) { all.random(random) }
 		return chars.shuffled(random).joinToString("")
@@ -41,6 +44,7 @@ object Passwords {
 		}
 			.joinToString(separator)
 
+	/** An upper bound: forcing one character from each set costs a few bits, which the UI's ≈ allows for. */
 	fun passwordEntropy(length: Int, sets: Set<CharSet>, excludeAmbiguous: Boolean) =
 		floor(length * log2(pools(sets, excludeAmbiguous).sumOf { it.length }.toDouble())).toInt()
 

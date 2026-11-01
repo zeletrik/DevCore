@@ -2,19 +2,16 @@ package eu.zeletrik.devcore.tools.barcode
 
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
+import com.google.zxing.MultiFormatWriter
 import com.google.zxing.common.BitMatrix
-import com.google.zxing.oned.Code128Writer
-import com.google.zxing.oned.Code39Writer
-import com.google.zxing.oned.EAN13Writer
-import com.google.zxing.oned.EAN8Writer
-import com.google.zxing.oned.UPCAWriter
 
-enum class Symbology(val label: String, val digits: IntRange?) {
-	CODE_128("Code 128", null),
-	EAN_13("EAN-13", digits = 12..13),
-	EAN_8("EAN-8", digits = 7..8),
-	UPC_A("UPC-A", digits = 11..12),
-	CODE_39("Code 39", null),
+/** The barcode formats offered; [digits] is a GS1 format's payload length, alone or with its check digit. */
+enum class Symbology(val label: String, val format: BarcodeFormat, val digits: IntRange?) {
+	CODE_128("Code 128", BarcodeFormat.CODE_128, null),
+	EAN_13("EAN-13", BarcodeFormat.EAN_13, digits = 12..13),
+	EAN_8("EAN-8", BarcodeFormat.EAN_8, digits = 7..8),
+	UPC_A("UPC-A", BarcodeFormat.UPC_A, digits = 11..12),
+	CODE_39("Code 39", BarcodeFormat.CODE_39, null),
 }
 
 /** Validates against each format's rules first: ZXing alone is laxer (Code 39 takes `x`, Code 128 takes a tab). */
@@ -32,7 +29,7 @@ object Barcodes {
 	fun encode(input: String, symbology: Symbology): Pair<String, BitMatrix> {
 		val value = when (symbology) {
 			Symbology.CODE_128 -> input.also { text ->
-				text.firstOrNull { it.code !in 32..126 }
+				text.firstOrNull { it.code !in ' '.code..'~'.code }
 					?.let { throw IllegalArgumentException("Code 128 takes only ASCII characters 32–126 (space to ~)") }
 			}
 			Symbology.CODE_39 -> input.also { text ->
@@ -40,14 +37,7 @@ object Barcodes {
 			}
 			else -> withCheckDigit(input, symbology)
 		}
-		val matrix = when (symbology) {
-			Symbology.CODE_128 -> Code128Writer().encode(value, BarcodeFormat.CODE_128, 0, 1, quietZone)
-			Symbology.CODE_39 -> Code39Writer().encode(value, BarcodeFormat.CODE_39, 0, 1, quietZone)
-			Symbology.EAN_13 -> EAN13Writer().encode(value, BarcodeFormat.EAN_13, 0, 1, quietZone)
-			Symbology.EAN_8 -> EAN8Writer().encode(value, BarcodeFormat.EAN_8, 0, 1, quietZone)
-			Symbology.UPC_A -> UPCAWriter().encode(value, BarcodeFormat.UPC_A, 0, 1, quietZone)
-		}
-		return value to matrix
+		return value to MultiFormatWriter().encode(value, symbology.format, 0, 1, quietZone)
 	}
 
 	private fun withCheckDigit(input: String, symbology: Symbology): String {
@@ -64,7 +54,7 @@ object Barcodes {
 	}
 
 	/** GS1: weights 3, 1, 3, … from the rightmost payload digit; the check digit tops the sum up to a multiple of 10. */
-	fun checkDigit(payload: String): Int {
+	private fun checkDigit(payload: String): Int {
 		val sum = payload.reversed().mapIndexed { i, c -> c.digitToInt() * if (i % 2 == 0) GS1_WEIGHT else 1 }.sum()
 		return (GS1_MODULUS - sum % GS1_MODULUS) % GS1_MODULUS
 	}

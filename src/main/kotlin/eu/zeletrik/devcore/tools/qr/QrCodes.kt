@@ -7,10 +7,12 @@ import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 
+/** The Wi-Fi security types, with their codes in the `WIFI:` payload. */
 enum class WifiSecurity(val label: String, val code: String) {
 	WPA("WPA/WPA2/WPA3", "WPA"), WEP("WEP", "WEP"), NONE("None", "nopass")
 }
 
+/** QR matrices for text and Wi-Fi payloads, without a quiet zone: the renderer adds it. */
 object QrCodes {
 	/** The de facto `WIFI:` payload; `\ ; , : "` are backslash-escaped. */
 	fun wifi(ssid: String, password: String, security: WifiSecurity, hidden: Boolean): String = buildString {

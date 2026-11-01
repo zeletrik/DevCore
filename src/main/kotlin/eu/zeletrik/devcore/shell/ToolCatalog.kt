@@ -14,11 +14,11 @@ class ToolCatalog(properties: DevCoreProperties) {
 
 	fun isVisible(tool: Tool) = tool !in hidden
 
-	fun byId(id: String) = Tool.byId(id)?.takeIf(::isVisible)
-
 	private fun resolve(ids: List<String>, variable: String): Set<Tool> =
 		ids.map(String::trim).filter(String::isNotEmpty).distinct().mapNotNullTo(mutableSetOf()) { id ->
-			Tool.byId(id) ?: null.also { log.warn("Ignoring unknown tool id '{}' in {}", id, variable) }
+			val tool = Tool.byId(id)
+			if (tool == null) log.warn("Ignoring unknown tool id '{}' in {}", id, variable)
+			tool
 		}
 
 	private companion object {

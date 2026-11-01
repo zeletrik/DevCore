@@ -2,6 +2,7 @@ package eu.zeletrik.devcore.tools.lorem
 
 import kotlin.random.Random
 
+/** What the count counts. */
 enum class LoremUnit(val label: String) { PARAGRAPHS("Paragraphs"), SENTENCES("Sentences"), WORDS("Words") }
 
 private const val MIN_WORDS = 8
@@ -18,21 +19,22 @@ object LoremIpsum {
 			"consequat duis aute irure in reprehenderit voluptate velit esse cillum fugiat nulla pariatur excepteur sint " +
 			"occaecat cupidatat non proident sunt culpa qui officia deserunt mollit anim id est laborum"
 		).split(" ")
+	private val openingWords = OPENING.removeSuffix(".").replace(",", "").split(" ")
 
-	fun generate(unit: LoremUnit, count: Int, classicStart: Boolean, random: Random = Random): String = when (unit) {
+	fun generate(unit: LoremUnit, count: Int, classicStart: Boolean): String = when (unit) {
 		LoremUnit.WORDS -> {
-			val opening = if (classicStart) OPENING.removeSuffix(".").replace(",", "").split(" ") else emptyList()
-			(opening + List(count) { vocabulary.random(random) }).take(count).joinToString(" ")
+			val opening = if (classicStart) openingWords else emptyList()
+			(opening + List(count) { vocabulary.random() }).take(count).joinToString(" ")
 		}
-		LoremUnit.SENTENCES -> sentences(count, classicStart, random).joinToString(" ")
+		LoremUnit.SENTENCES -> sentences(count, classicStart).joinToString(" ")
 		LoremUnit.PARAGRAPHS -> List(count) { i ->
-			sentences(random.nextInt(MIN_SENTENCES, MAX_SENTENCES + 1), classicStart && i == 0, random).joinToString(" ")
+			sentences(Random.nextInt(MIN_SENTENCES, MAX_SENTENCES + 1), classicStart && i == 0).joinToString(" ")
 		}.joinToString("\n\n")
 	}
 
-	private fun sentences(count: Int, classicStart: Boolean, random: Random) = List(count) { i ->
+	private fun sentences(count: Int, classicStart: Boolean) = List(count) { i ->
 		if (i == 0 && classicStart) OPENING
-		else List(random.nextInt(MIN_WORDS, MAX_WORDS + 1)) { vocabulary.random(random) }.joinToString(" ")
+		else List(Random.nextInt(MIN_WORDS, MAX_WORDS + 1)) { vocabulary.random() }.joinToString(" ")
 			.replaceFirstChar { it.uppercase() } + "."
 	}
 }

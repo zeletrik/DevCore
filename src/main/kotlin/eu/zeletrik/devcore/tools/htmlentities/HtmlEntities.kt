@@ -9,7 +9,12 @@ private const val HEX = 16
 private const val C1_FIRST = 0x80
 private const val C1_LAST = 0x9F
 
+/** Named and numeric HTML entities, encoded and decoded as browsers do. */
 object HtmlEntities {
+	/**
+	 * The five HTML-significant characters, plus hex references for non-ASCII when asked. The apostrophe becomes
+	 * `&#39;`, since HTML 4 has no `&apos;`.
+	 */
 	fun encode(text: String, nonAscii: Boolean): String = buildString {
 		text.codePoints().forEach { cp ->
 			when {
@@ -43,7 +48,7 @@ object HtmlEntities {
 		cp == null || !Character.isValidCodePoint(cp) -> null
 		cp == 0 || cp in Char.MIN_SURROGATE.code..Char.MAX_SURROGATE.code -> REPLACEMENT
 		cp in C1_FIRST..C1_LAST -> (windows1252[cp - C1_FIRST].takeIf { it != 0 } ?: cp).toChar().toString()
-		else -> String(Character.toChars(cp))
+		else -> Character.toString(cp)
 	}
 
 	private val REPLACEMENT = Char(0xFFFD).toString()

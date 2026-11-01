@@ -10,6 +10,7 @@ import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textLine
 
+/** Splits a URL into its parts and decodes the query parameters. */
 @Route("url-parser", layout = MainLayout::class)
 @SpringComponent
 @UIScope

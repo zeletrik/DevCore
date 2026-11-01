@@ -12,6 +12,7 @@ import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textArea
 import eu.zeletrik.devcore.shell.textLine
 
+/** Runs a JSONPath over the JSON; matches always come back as an array. */
 @Route("jsonpath-tester", layout = MainLayout::class)
 @SpringComponent
 @UIScope

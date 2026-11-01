@@ -3,8 +3,6 @@ package eu.zeletrik.devcore.tools.password
 import com.vaadin.flow.component.checkbox.Checkbox
 import com.vaadin.flow.component.checkbox.CheckboxGroup
 import com.vaadin.flow.component.html.Span
-import com.vaadin.flow.component.orderedlayout.FlexComponent
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
@@ -14,11 +12,14 @@ import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.boundedInt
+import eu.zeletrik.devcore.shell.markInvalid
 import eu.zeletrik.devcore.shell.numberField
+import eu.zeletrik.devcore.shell.optionsRow
 import eu.zeletrik.devcore.shell.textLine
 
 private const val MAX_SEPARATOR = 10
 
+/** Any option change regenerates; the button only draws again with the same options. */
 @Route("password-generator", layout = MainLayout::class)
 @SpringComponent
 @UIScope
@@ -48,18 +49,12 @@ class PasswordView : GeneratorView(Tool.PASSWORD) {
 	internal val count = numberField("Count", 1..1000, 1).apply { addValueChangeListener { generate() } }
 	internal val entropy = Span()
 	internal val output = OutputField("Passwords")
-	private val passwordOptions = HorizontalLayout(length, sets, excludeAmbiguous)
-	private val passphraseOptions = HorizontalLayout(words, separator, capitalize).apply { isVisible = false }
+	private val passwordOptions = optionsRow(length, sets, excludeAmbiguous)
+	private val passphraseOptions = optionsRow(words, separator, capitalize).apply { isVisible = false }
 
 	init {
-		listOf(passwordOptions, passphraseOptions).forEach {
-			it.defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
-			it.isWrap = true
-		}
 		add(
-			HorizontalLayout(passphrase, count, generateButton, generateError).apply {
-				defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
-			},
+			optionsRow(passphrase, count, generateButton, generateError),
 			passwordOptions,
 			passphraseOptions,
 			entropy,
@@ -74,15 +69,15 @@ class PasswordView : GeneratorView(Tool.PASSWORD) {
 
 	/** Every invalid option is marked; the output changes only when all of them are valid. */
 	override fun produce() {
-		val n = boundedInt(count, 1..1000)
+		val n = boundedInt(count)
 		if (passphrase.value) passphrases(n) else passwords(n)
 	}
 
 	private fun passphrases(n: Int?) {
-		val k = boundedInt(words, 3..20)
+		val k = boundedInt(words)
 		separator.isInvalid = false
 		val separatorFits = separator.value.length <= MAX_SEPARATOR
-		if (!separatorFits) mark(separator, "At most 10 characters")
+		if (!separatorFits) separator.markInvalid("At most 10 characters")
 		if (n != null && k != null && separatorFits) {
 			output.value = List(n) { Passwords.passphrase(k, separator.value, capitalize.value) }.joinToString("\n")
 			entropy.text = "≈ ${Passwords.passphraseEntropy(k)} bits each"
@@ -90,9 +85,9 @@ class PasswordView : GeneratorView(Tool.PASSWORD) {
 	}
 
 	private fun passwords(n: Int?) {
-		val size = boundedInt(length, 4..128)
+		val size = boundedInt(length)
 		sets.isInvalid = false
-		if (sets.value.isEmpty()) mark(sets, "Select at least one character set")
+		if (sets.value.isEmpty()) sets.markInvalid("Select at least one character set")
 		if (n != null && size != null && sets.value.isNotEmpty()) {
 			output.value = List(n) { Passwords.password(size, sets.value, excludeAmbiguous.value) }.joinToString("\n")
 			entropy.text = "≈ ${Passwords.passwordEntropy(size, sets.value, excludeAmbiguous.value)} bits each"

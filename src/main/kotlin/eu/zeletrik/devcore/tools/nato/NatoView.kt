@@ -10,6 +10,7 @@ import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textArea
 
+/** Spells text with the NATO alphabet, one word per character. */
 @Route("nato-alphabet", layout = MainLayout::class)
 @SpringComponent
 @UIScope

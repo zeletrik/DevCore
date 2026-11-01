@@ -1,0 +1,58 @@
+[versions]
+kotlin = "2.4.21"
+spring-boot = "4.1.2"
+spring-dependency-management = "1.1.7"
+vaadin = "25.3.4"
+detekt = "2.0.0-alpha.6"
+license-report = "3.1.5"
+# NOTE: pinned because Jackson 3.1.x truncates 19-digit TOML integers; drop the pin once Spring Boot manages 3.2.4+.
+jackson-toml = "3.2.4"
+java-diff-utils = "4.18"
+sql-formatter = "2.0.5"
+json-path = "3.0.0"
+commonmark = "0.32.0"
+jsoup = "1.23.2"
+bouncycastle = "1.86"
+zxing = "3.5.4"
+
+# Libraries without a version are managed by the Spring Boot and Vaadin BOMs.
+[libraries]
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-devtools = { module = "org.springframework.boot:spring-boot-devtools" }
+spring-boot-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+vaadin-spring = { module = "com.vaadin:vaadin-spring-boot-starter" }
+vaadin-dev = { module = "com.vaadin:vaadin-dev" }
+vaadin-browserless-test = { module = "com.vaadin:browserless-test-spring" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
+junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+jackson-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
+jackson-yaml = { module = "tools.jackson.dataformat:jackson-dataformat-yaml" }
+jackson-csv = { module = "tools.jackson.dataformat:jackson-dataformat-csv" }
+jackson-properties = { module = "tools.jackson.dataformat:jackson-dataformat-properties" }
+jackson-toml = { module = "tools.jackson.dataformat:jackson-dataformat-toml", version.ref = "jackson-toml" }
+java-diff-utils = { module = "io.github.java-diff-utils:java-diff-utils", version.ref = "java-diff-utils" }
+sql-formatter = { module = "com.github.vertical-blank:sql-formatter", version.ref = "sql-formatter" }
+json-path = { module = "com.jayway.jsonpath:json-path", version.ref = "json-path" }
+commonmark-core = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
+commonmark-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
+commonmark-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
+commonmark-autolink = { module = "org.commonmark:commonmark-ext-autolink", version.ref = "commonmark" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+bouncycastle-prov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+bouncycastle-pkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
+zxing = { module = "com.google.zxing:core", version.ref = "zxing" }
+
+[bundles]
+commonmark = ["commonmark-core", "commonmark-tables", "commonmark-strikethrough", "commonmark-autolink"]
+bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix"]
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+vaadin = { id = "com.vaadin", version.ref = "vaadin" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
+license-report = { id = "com.github.jk1.dependency-license-report", version.ref = "license-report" }

@@ -14,22 +14,10 @@ class OutputField(label: String) : TextArea(label) {
 		isEnabled = false
 	}
 
-	/** Changes the visible label and the copy button's accessible name together. */
-	/** Every tool output passes through here, so no output can pass the output cap unnoticed. */
-	override fun setValue(value: String) {
-		if (value.length > MAX_OUTPUT_CHARS) throw OutputTooLarge()
-		super.setValue(value)
-	}
-
-	fun relabel(text: String) {
-		label = text
-		copy.setAriaLabel("Copy $text")
-	}
-
 	init {
 		isReadOnly = true
 		setWidthFull()
-		style.set("font-family", "ui-monospace, monospace")
+		monospace()
 		suffixComponent = copy
 		addValueChangeListener { copy.isEnabled = it.value.isNotEmpty() }
 		// NOTE: copy runs in the browser — Vaadin's Clipboard API needs a secure context, plain-HTTP LANs don't have one.
@@ -38,6 +26,18 @@ class OutputField(label: String) : TextArea(label) {
 		copy.element.addEventListener("devcore-copy-failed") {
 			Notification.show("Copy failed — select the text and copy it manually")
 		}
+	}
+
+	/** Every tool output passes through here, so no output can pass the output cap unnoticed. */
+	override fun setValue(value: String) {
+		if (value.length > MAX_OUTPUT_CHARS) throw OutputTooLarge()
+		super.setValue(value)
+	}
+
+	/** Changes the visible label and the copy button's accessible name together. */
+	fun relabel(text: String) {
+		label = text
+		copy.setAriaLabel("Copy $text")
 	}
 
 	private companion object {

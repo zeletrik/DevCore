@@ -19,6 +19,10 @@ private const val NOT_AN_ADDRESS = "Not an IPv4 or IPv6 address"
 
 /** IPv4 and IPv6 ranges from literals only: a host name is never looked up (that would be an outbound call). */
 object Subnets {
+	/**
+	 * `a.b.c.d`, `a.b.c.d/n`, `a.b.c.d m.m.m.m` or an IPv6 literal with an optional `/n`. A `%zone` index names an
+	 * interface, so it is refused.
+	 */
 	fun describe(text: String): String {
 		val input = text.trim()
 		val parts = input.split(Regex("\\s+"))
@@ -39,6 +43,7 @@ object Subnets {
 	fun ipv6Text(address: ByteArray): String = Ipv6.compressed(BigInteger(1, address))
 }
 
+/** IPv4 as a Long: parsing, netmasks and the description lines. */
 private object Ipv4 {
 	private val dottedQuad = Regex("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})")
 
@@ -51,7 +56,7 @@ private object Ipv4 {
 	}
 
 	fun prefixOf(netmask: Long): Int {
-		val bits = java.lang.Long.bitCount(netmask)
+		val bits = netmask.countOneBits()
 		require(netmask == maskOf(bits)) { "Netmask must be contiguous" }
 		return bits
 	}
@@ -113,6 +118,7 @@ private object Ipv4 {
 	}
 }
 
+/** IPv6 as a BigInteger: the description lines and RFC 5952 text. */
 private object Ipv6 {
 	fun describe(text: String, prefix: Int): String {
 		require(prefix in 0..IPV6_BITS) { "Prefix must be 0–128" }
@@ -123,10 +129,9 @@ private object Ipv6 {
 			// ofLiteral turns ::ffff:a.b.c.d into an IPv4 address; keep it IPv6.
 			if (literal is Inet4Address) BigInteger.valueOf(IPV4_MAPPED).shiftLeft(IPV4_BITS).or(it) else it
 		}
-		val all = BigInteger.ONE.shiftLeft(IPV6_BITS) - BigInteger.ONE
-		val mask = all.xor(BigInteger.ONE.shiftLeft(IPV6_BITS - prefix) - BigInteger.ONE)
-		val network = address.and(mask)
-		val last = network.or(all.xor(mask))
+		val hostBits = BigInteger.ONE.shiftLeft(IPV6_BITS - prefix) - BigInteger.ONE
+		val network = address.andNot(hostBits)
+		val last = network.or(hostBits)
 		return listOf(
 			"Address: ${compressed(address)}",
 			"Expanded: ${groups(address).joinToString(":") { "%04x".format(it) }}",
@@ -134,7 +139,7 @@ private object Ipv6 {
 			"Prefix length: $prefix",
 			"First address: ${compressed(network)}",
 			"Last address: ${compressed(last)}",
-			"Total addresses: ${BigInteger.ONE.shiftLeft(IPV6_BITS - prefix)}",
+			"Total addresses: ${hostBits + BigInteger.ONE}",
 			"Type: ${type(address)}",
 		).joinToString("\n")
 	}

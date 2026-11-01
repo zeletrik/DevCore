@@ -20,11 +20,6 @@ private val log = LoggerFactory.getLogger(ToolView::class.java)
 /** One WARN line per unexpected failure: the tool and the exception's class only, never its message or any input. */
 internal fun logFailure(tool: Tool, error: Throwable) = log.warn("{} failed: {}", tool.id, error.javaClass.name)
 
-private fun TextFieldBase<*, String>.markInvalid(message: String) {
-	errorMessage = message
-	isInvalid = true
-}
-
 /** Every tool page: its title, a one-line description, and the deep-link `mode` (tools without modes ignore it). */
 abstract class ToolView(val tool: Tool) : VerticalLayout(), HasDynamicTitle, BeforeEnterObserver {
 	internal val intro = Paragraph(tool.description).apply {
@@ -37,6 +32,7 @@ abstract class ToolView(val tool: Tool) : VerticalLayout(), HasDynamicTitle, Bef
 
 	override fun getPageTitle() = "${tool.title} — DevCore"
 
+	/** The raw deep-link `mode`; tools with modes select the matching one, see [Mode.fromParam]. */
 	protected open fun applyMode(mode: String?) {}
 
 	override fun beforeEnter(event: BeforeEnterEvent) {
@@ -60,8 +56,10 @@ abstract class TextToolView<F : TextFieldBase<F, String>>(tool: Tool, internal v
 		input.addValueChangeListener { recompute() }
 	}
 
+	/** Fills the outputs for [text], which is non-empty and within the cap; throws for invalid input. */
 	protected abstract fun render(text: String)
 
+	/** Empties every output; called for empty input and after any failure. */
 	protected abstract fun clearOutputs()
 
 	/** Whether the deep-link `input` fills the primary input right now. */
@@ -81,24 +79,31 @@ abstract class TextToolView<F : TextFieldBase<F, String>>(tool: Tool, internal v
 	/** Runs work that depends only on an optional field; a failure marks just that field and returns null. */
 	protected fun <R> optional(component: TextFieldBase<*, String>, work: () -> R): R? {
 		component.isInvalid = false
-		if (component.value.length > MAX_INPUT_CHARS) return null.also { component.markInvalid(TOO_LARGE) }
+		if (component.value.length > MAX_INPUT_CHARS) {
+			component.markInvalid(TOO_LARGE)
+			return null
+		}
 		return try {
 			work()
 		} catch (e: OutputTooLarge) {
 			// A whole-output problem, not this field's: recompute reports it on the primary input.
 			throw e
 		} catch (e: IllegalArgumentException) {
-			null.also { component.markInvalid(e.message ?: "Invalid value") }
+			component.markInvalid(e.message ?: "Invalid value")
+			null
 		}
 	}
 
 	protected fun recompute() {
 		val fields = listOf(input) + required
-		fields.forEach { it.isInvalid = false }
+		(fields + byKey.values).forEach { it.isInvalid = false }
 		val tooLarge = fields.firstOrNull { it.value.length > MAX_INPUT_CHARS }
 		when {
 			tooLarge != null -> fail(tooLarge, TOO_LARGE)
-			isEmpty() -> clearOutputs().also { renderedWith = null }
+			isEmpty() -> {
+				clearOutputs()
+				renderedWith = null
+			}
 			else -> runCatching {
 				keptOutput = false
 				render(input.value)
@@ -150,6 +155,7 @@ abstract class TextToolView<F : TextFieldBase<F, String>>(tool: Tool, internal v
 	}
 }
 
+/** The two directions of an encoder-style tool; [modeGroup] renders it and [fromParam] reads the deep link. */
 enum class Mode(val label: String) {
 	ENCODE("Encode"), DECODE("Decode");
 

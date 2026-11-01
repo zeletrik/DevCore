@@ -3,6 +3,9 @@ package eu.zeletrik.devcore.shell
 import com.vaadin.flow.component.combobox.ComboBox
 import java.time.ZoneId
 
+/** The picked zone; UTC when the box has been cleared. */
+val ComboBox<String>.zoneId: ZoneId get() = ZoneId.of(value ?: "UTC")
+
 /** IANA zones, UTC until the browser reports its own; a zone the user picked is never overwritten. */
 fun zonePicker(label: String = "Time zone", onChange: () -> Unit): ComboBox<String> {
 	var chosen = false

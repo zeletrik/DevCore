@@ -14,6 +14,7 @@ import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.modeGroup
 import eu.zeletrik.devcore.shell.textArea
 
+/** Escape to entities or decode them; non-ASCII can be escaped too. */
 @Route("html-entities", layout = MainLayout::class)
 @SpringComponent
 @UIScope

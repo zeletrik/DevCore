@@ -13,6 +13,10 @@ import com.vaadin.flow.router.ParentLayout
 import com.vaadin.flow.router.RouterLink
 import com.vaadin.flow.server.HttpStatusCode
 
+/**
+ * The 404 page inside the main layout: unknown paths land here, and so do hidden tools (see [HiddenToolGuard]).
+ * An error view has no route of its own, hence @ParentLayout rather than @Route.
+ */
 @ParentLayout(MainLayout::class)
 @PageTitle("Tool not found — DevCore")
 class NotFoundView : VerticalLayout(), HasErrorParameter<NotFoundException> {

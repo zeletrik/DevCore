@@ -30,6 +30,7 @@ private const val ALPHA_DECIMALS = 3
 /** An sRGB color with 0–255 channels and alpha 0–1. */
 data class Rgba(val r: Int, val g: Int, val b: Int, val a: Double = 1.0)
 
+/** One color written every way the converter shows it; [name] is empty unless a CSS name matches exactly. */
 data class ColorNotations(
 	val hex: String,
 	val rgb: String,
@@ -39,6 +40,10 @@ data class ColorNotations(
 	val name: String,
 )
 
+/**
+ * Hex (3, 4, 6 or 8 digits, `#` optional), the 148 CSS names, and rgb()/rgba()/hsl()/hsla()/hsv()/cmyk() with comma,
+ * slash or space separators.
+ */
 object Colors {
 	const val INVALID = "Invalid color"
 
@@ -126,10 +131,7 @@ object Colors {
 				}
 				else -> {
 					require(parts.size == INKS) { INVALID }
-					val inks = parts.map(::percent)
-					val k = inks.last()
-					val (r, g, b) = inks.take(COMPONENTS).map { ((1 - it) * (1 - k) * CHANNEL_MAX).roundToInt() }
-					Rgba(r, g, b)
+					ColorSpaces.fromCmyk(parts.map(::percent))
 				}
 			}
 		}
@@ -142,14 +144,13 @@ object Colors {
 		val hex = cssHex(color) + if (opaque) "" else "%02x".format((a * CHANNEL_MAX).roundToInt())
 		val (h, s, l) = ColorSpaces.toHsl(color)
 		val (hv, sv, v) = ColorSpaces.toHsv(color)
-		val k = 1 - max(r, max(g, b)) / CHANNEL_MAX
-		fun ink(channel: Int) = if (k >= 1.0) 0 else ((1 - channel / CHANNEL_MAX - k) / (1 - k) * PERCENT).roundToInt()
+		val inks = ColorSpaces.toCmyk(color)
 		return ColorNotations(
 			hex = hex,
 			rgb = if (opaque) "rgb($r, $g, $b)" else "rgba($r, $g, $b, ${trim(a)})",
 			hsl = "hsl($h, $s%, $l%)",
 			hsv = "hsv($hv, $sv%, $v%)",
-			cmyk = "cmyk(${ink(r)}%, ${ink(g)}%, ${ink(b)}%, ${(k * PERCENT).roundToInt()}%)",
+			cmyk = "cmyk(${inks.joinToString("%, ")}%)",
 			name = if (opaque) named.entries.firstOrNull { it.value == hex }?.key.orEmpty() else "",
 		)
 	}
@@ -204,6 +205,20 @@ private object ColorSpaces {
 		return fromChroma(h, c, l - c / 2, a)
 	}
 
+	/** Cyan, magenta, yellow and black as fractions. */
+	fun fromCmyk(inks: List<Double>): Rgba {
+		val k = inks.last()
+		fun channel(ink: Double) = ((1 - ink) * (1 - k) * CHANNEL_MAX).roundToInt()
+		return Rgba(channel(inks[0]), channel(inks[1]), channel(inks[2]))
+	}
+
+	/** Cyan, magenta, yellow, black as whole percentages: black is the largest channel's shortfall, each ink the rest. */
+	fun toCmyk(color: Rgba): List<Int> {
+		val k = 1 - max(color.r, max(color.g, color.b)) / CHANNEL_MAX
+		fun ink(channel: Int) = if (k >= 1.0) 0 else ((1 - channel / CHANNEL_MAX - k) / (1 - k) * PERCENT).roundToInt()
+		return listOf(ink(color.r), ink(color.g), ink(color.b), (k * PERCENT).roundToInt())
+	}
+
 	fun fromHsv(h: Double, s: Double, v: Double): Rgba {
 		val c = v * s
 		return fromChroma(h, c, v - c, 1.0)
@@ -227,6 +242,7 @@ private object ColorSpaces {
 			else -> (r - g) / delta + BLUE_SECTOR
 		}
 		val h = sector * SECTOR_DEGREES
+		// Rounding can land on 360, which is hue 0.
 		return ((h + FULL_TURN) % FULL_TURN).roundToInt() % FULL_TURN.toInt()
 	}
 

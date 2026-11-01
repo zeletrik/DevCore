@@ -1,6 +1,7 @@
 package eu.zeletrik.devcore.tools.xml
 
 import eu.zeletrik.devcore.shell.BoundedWriter
+import eu.zeletrik.devcore.tools.json.BYTE_ORDER_MARK
 import eu.zeletrik.devcore.tools.json.Indent
 import java.io.StringReader
 import javax.xml.stream.XMLInputFactory
@@ -16,8 +17,6 @@ import javax.xml.stream.XMLStreamException
 import javax.xml.stream.XMLStreamReader
 
 /** Streams the document with DTDs off, so no entity is ever resolved and nothing outside the input is read. */
-private val BYTE_ORDER_MARK = Char(0xFEFF).toString()
-
 object XmlFormatter {
 	private val factory = XMLInputFactory.newFactory().apply {
 		setProperty(XMLInputFactory.SUPPORT_DTD, false)
@@ -29,6 +28,7 @@ object XmlFormatter {
 
 	private sealed interface Node
 
+	/** An element with its tag and its attribute markup already rendered and escaped (` xmlns="…" a="b"`, or empty). */
 	private class Element(
 		val tag: String,
 		val attributes: String,

@@ -10,6 +10,7 @@ import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textArea
 
+/** Every case at once, one output per [Case]. */
 @Route("case-converter", layout = MainLayout::class)
 @SpringComponent
 @UIScope

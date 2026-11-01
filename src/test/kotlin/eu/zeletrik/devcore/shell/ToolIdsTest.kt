@@ -108,6 +108,7 @@ class ToolIdsTest {
 	@Test
 	fun `forty tools with the names of the public table`() {
 		assertEquals(40, Tool.entries.size)
+		assertTrue("${Tool.entries.size} tools" in Project.DESCRIPTION, "the description counts the tools")
 		assertEquals(
 			mapOf(
 				"chmod-calculator" to "Chmod Calculator",

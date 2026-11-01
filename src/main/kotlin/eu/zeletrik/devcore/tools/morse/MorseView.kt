@@ -12,6 +12,7 @@ import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.modeGroup
 import eu.zeletrik.devcore.shell.textArea
 
+/** Text to Morse and back. */
 @Route("morse-code", layout = MainLayout::class)
 @SpringComponent
 @UIScope

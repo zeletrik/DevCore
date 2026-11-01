@@ -14,6 +14,7 @@ import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.modeGroup
 import eu.zeletrik.devcore.shell.textArea
 
+/** Encode or decode, in the standard or the URL-safe alphabet. */
 @Route("base64", layout = MainLayout::class)
 @SpringComponent
 @UIScope

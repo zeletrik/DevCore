@@ -3,7 +3,6 @@ package eu.zeletrik.devcore.shell
 import com.vaadin.flow.component.Component
 import com.vaadin.flow.component.Html
 import com.vaadin.flow.component.html.Anchor
-import com.vaadin.flow.component.html.AnchorTarget
 import com.vaadin.flow.component.html.H2
 import com.vaadin.flow.component.html.H3
 import com.vaadin.flow.component.html.ListItem
@@ -32,7 +31,7 @@ class AboutView(buildProperties: ObjectProvider<BuildProperties>) : VerticalLayo
 	internal val built = Paragraph("Built ${build?.time ?: "locally"}")
 	internal val whatsNew = releaseNotes(bundled("CHANGELOG.md"))
 	internal val dependencies = UnorderedList().apply {
-		libraries().forEach { (name, version, licenses) -> add(ListItem("$name $version — $licenses")) }
+		libraries().forEach { add(ListItem(it)) }
 	}
 
 	init {
@@ -59,26 +58,21 @@ class AboutView(buildProperties: ObjectProvider<BuildProperties>) : VerticalLayo
 		)
 	}
 
-	private fun link(href: String, text: String) = Anchor(href, text).apply {
-		setTarget(AnchorTarget.BLANK)
-		element.setAttribute("rel", "noopener noreferrer")
-	}
+	private fun link(href: String, text: String) = Anchor(href, text).openInNewTab()
 
 	private fun bundled(name: String) = javaClass.classLoader.getResource(BUNDLED + name)?.readText()
 
-	/** Name, version and licenses of every library the jar ships, from the build's license report. */
-	private fun libraries(): List<Triple<String, String, String>> {
+	/** One line per library the jar ships: name, version and licenses, from the build's license report. */
+	private fun libraries(): List<String> {
 		val report = bundled("dependencies.json") ?: return emptyList()
+		// Jackson's JsonNode has a map() of its own that shadows Kotlin's, hence the lists.
 		return JsonMapper().readTree(report).path("dependencies").toList().map { dependency ->
-			val licenses = dependency.path("moduleLicenses")
-				.toList()
+			val licenses = dependency.path("moduleLicenses").toList()
 				.map { it.path("moduleLicense").asString() }
 				.filter { it.isNotEmpty() }
-			Triple(
-				dependency.path("moduleName").asString(),
-				dependency.path("moduleVersion").asString(),
-				licenses.joinToString(" / ").ifEmpty { "not declared" },
-			)
+				.joinToString(" / ")
+				.ifEmpty { "not declared" }
+			"${dependency.path("moduleName").asString()} ${dependency.path("moduleVersion").asString()} — $licenses"
 		}
 	}
 

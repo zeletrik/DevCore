@@ -12,6 +12,7 @@ import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textArea
 import java.time.Instant
 
+/** Decoding runs on [DeepWork]: Bouncy Castle's DER parser recurses once per nesting level. */
 @Route("certificate-decoder", layout = MainLayout::class)
 @SpringComponent
 @UIScope

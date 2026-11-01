@@ -10,6 +10,7 @@ import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textArea
 
+/** Character, word, line and byte counts. */
 @Route("text-statistics", layout = MainLayout::class)
 @SpringComponent
 @UIScope

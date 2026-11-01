@@ -3,10 +3,12 @@ package eu.zeletrik.devcore.tools.lines
 import java.util.Arrays
 import kotlin.random.Random
 
+/** How lines are ordered; natural order compares digit runs numerically. */
 enum class Order(val label: String) {
 	AS_IS("As is"), ASCENDING("A→Z"), DESCENDING("Z→A"), NATURAL("Natural"), REVERSE("Reverse"), SHUFFLE("Shuffle"),
 }
 
+/** The switches of the Line Tools, applied in declaration order. */
 data class LineOptions(
 	val trim: Boolean = false,
 	val removeEmpty: Boolean = false,

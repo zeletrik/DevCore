@@ -1,8 +1,6 @@
 package eu.zeletrik.devcore.tools.sql
 
 import com.vaadin.flow.component.checkbox.Checkbox
-import com.vaadin.flow.component.orderedlayout.FlexComponent
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup
 import com.vaadin.flow.component.select.Select
 import com.vaadin.flow.component.textfield.TextArea
@@ -14,19 +12,17 @@ import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
+import eu.zeletrik.devcore.shell.enumSelect
+import eu.zeletrik.devcore.shell.optionsRow
 import eu.zeletrik.devcore.shell.textArea
 
+/** Lays out SQL in the chosen dialect. */
 @Route("sql-formatter", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class SqlFormatterView : TextToolView<TextArea>(Tool.SQL, textArea("SQL")) {
-	internal val dialect = Select<SqlDialect>().apply {
-		label = "Dialect"
-		setItems(*SqlDialect.entries.toTypedArray())
-		setItemLabelGenerator { it.label }
-		value = SqlDialect.STANDARD
-		addValueChangeListener { recompute() }
-	}
+	internal val dialect =
+		enumSelect("Dialect", SqlDialect.entries, SqlDialect.STANDARD, SqlDialect::label) { recompute() }
 	internal val indent = RadioButtonGroup("Indentation", 2, 4).apply {
 		setItemLabelGenerator { "$it spaces" }
 		value = 2
@@ -37,16 +33,18 @@ class SqlFormatterView : TextToolView<TextArea>(Tool.SQL, textArea("SQL")) {
 
 	init {
 		add(
-			HorizontalLayout(dialect, indent, uppercase)
-				.apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true },
+			optionsRow(dialect, indent, uppercase),
 			input,
 			output,
 		)
 	}
 
 	override fun render(text: String) {
-		val (d, i, u) = Triple(dialect.value, indent.value, uppercase.value)
-		output.value = DeepWork.run { SqlFormat.format(text, d, i, u) }
+		// Read here: DeepWork's task must not touch components.
+		val chosenDialect = dialect.value
+		val spaces = indent.value
+		val upper = uppercase.value
+		output.value = DeepWork.run { SqlFormat.format(text, chosenDialect, spaces, upper) }
 	}
 
 	override fun clearOutputs() = output.clear()

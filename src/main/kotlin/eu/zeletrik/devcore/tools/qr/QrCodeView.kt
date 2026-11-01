@@ -13,11 +13,13 @@ import eu.zeletrik.devcore.shell.CodeImageView
 import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
+import eu.zeletrik.devcore.shell.choice
 import eu.zeletrik.devcore.shell.textArea
 import eu.zeletrik.devcore.shell.textLine
 import eu.zeletrik.devcore.tools.FieldError
 import eu.zeletrik.devcore.tools.codes.CodeImages
 
+/** Text or a Wi-Fi payload; in Wi-Fi mode the SSID is the main input and QR errors land on it. */
 @Route("qr-code-generator", layout = MainLayout::class)
 @SpringComponent
 @UIScope
@@ -27,17 +29,12 @@ class QrCodeView : TextToolView<TextArea>(Tool.QR, textArea("Text or URL")) {
 		value = false
 		addValueChangeListener { showFields(); recompute() }
 	}
-	internal val level = RadioButtonGroup("Error correction", *ErrorCorrectionLevel.entries.toTypedArray()).apply {
-		value = ErrorCorrectionLevel.M
-		addValueChangeListener { recompute() }
+	internal val level = choice("Error correction", ErrorCorrectionLevel.entries, ErrorCorrectionLevel.M, { it.name }) {
+		recompute()
 	}
 	internal val ssid = field(textLine("SSID"), "ssid")
 	internal val password = field(textLine("Password"), "password")
-	internal val security = RadioButtonGroup("Security", *WifiSecurity.entries.toTypedArray()).apply {
-		setItemLabelGenerator { it.label }
-		value = WifiSecurity.WPA
-		addValueChangeListener { recompute() }
-	}
+	internal val security = choice("Security", WifiSecurity.entries, WifiSecurity.WPA, WifiSecurity::label) { recompute() }
 	internal val hidden = Checkbox("Hidden network").apply { addValueChangeListener { recompute() } }
 	private val wifi = HorizontalLayout(ssid, password, security, hidden)
 		.apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true; isVisible = false }

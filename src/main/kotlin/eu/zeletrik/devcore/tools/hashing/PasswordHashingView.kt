@@ -1,9 +1,6 @@
 package eu.zeletrik.devcore.tools.hashing
 
 import com.vaadin.flow.component.html.Span
-import com.vaadin.flow.component.orderedlayout.FlexComponent
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout
-import com.vaadin.flow.component.radiobutton.RadioButtonGroup
 import com.vaadin.flow.component.textfield.PasswordField
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
@@ -13,10 +10,13 @@ import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.boundedInt
+import eu.zeletrik.devcore.shell.choice
 import eu.zeletrik.devcore.shell.numberField
+import eu.zeletrik.devcore.shell.optionsRow
 import eu.zeletrik.devcore.shell.secretField
 import eu.zeletrik.devcore.shell.textLine
 
+/** Hash a password, or verify one against a hash. */
 enum class HashMode(val label: String) {
 	HASH("Hash"), VERIFY("Verify");
 
@@ -30,16 +30,9 @@ enum class HashMode(val label: String) {
 @SpringComponent
 @UIScope
 class PasswordHashingView : TextToolView<PasswordField>(Tool.PASSWORD_HASHING, secretField("Password")) {
-	internal val mode = RadioButtonGroup("Mode", *HashMode.entries.toTypedArray()).apply {
-		setItemLabelGenerator { it.label }
-		value = HashMode.HASH
-		addValueChangeListener { showFields(); recompute() }
-	}
-	internal val algorithm = RadioButtonGroup("Algorithm", *HashAlgorithm.entries.toTypedArray()).apply {
-		setItemLabelGenerator { it.label }
-		value = HashAlgorithm.BCRYPT
-		addValueChangeListener { showFields(); recompute() }
-	}
+	internal val mode = choice("Mode", HashMode.entries, HashMode.HASH, HashMode::label) { showFields(); recompute() }
+	internal val algorithm =
+		choice("Algorithm", HashAlgorithm.entries, HashAlgorithm.BCRYPT, HashAlgorithm::label) { showFields(); recompute() }
 	internal val cost = numberField(
 		"Cost",
 		PasswordHashes.bcryptCosts,
@@ -55,17 +48,14 @@ class PasswordHashingView : TextToolView<PasswordField>(Tool.PASSWORD_HASHING, s
 		1..PasswordHashes.MAX_ARGON2_ITERATIONS,
 		2,
 	).apply { addValueChangeListener { recompute() } }
-	internal val hash = field(textLine("Hash"), "hash").apply { isVisible = false }
+	internal val hash = field(textLine("Hash"), "hash")
 	internal val output = OutputField("Hash")
 	internal val result = Span()
-	private val options = HorizontalLayout(algorithm, cost, memory, iterations)
+	private val options = optionsRow(algorithm, cost, memory, iterations)
 
 	init {
-		memory.isVisible = false
-		iterations.isVisible = false
-		options.defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE
-		options.isWrap = true
 		add(mode, options, input, hash, output, result)
+		showFields()
 	}
 
 	private fun showFields() {
@@ -98,10 +88,10 @@ class PasswordHashingView : TextToolView<PasswordField>(Tool.PASSWORD_HASHING, s
 
 	/** A new hash of [text], or null while a cost field is invalid (every invalid one is marked). */
 	private fun hash(text: String): String? = when (algorithm.value) {
-		HashAlgorithm.BCRYPT -> boundedInt(cost, PasswordHashes.bcryptCosts)?.let { PasswordHashes.bcrypt(text, it) }
+		HashAlgorithm.BCRYPT -> boundedInt(cost)?.let { PasswordHashes.bcrypt(text, it) }
 		else -> {
-			val m = boundedInt(memory, 8192..PasswordHashes.MAX_ARGON2_MEMORY_KIB)
-			val t = boundedInt(iterations, 1..PasswordHashes.MAX_ARGON2_ITERATIONS)
+			val m = boundedInt(memory)
+			val t = boundedInt(iterations)
 			if (m != null && t != null) PasswordHashes.argon2id(text, m, t) else null
 		}
 	}

@@ -1,8 +1,6 @@
 package eu.zeletrik.devcore.tools.lines
 
 import com.vaadin.flow.component.checkbox.Checkbox
-import com.vaadin.flow.component.orderedlayout.FlexComponent
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout
 import com.vaadin.flow.component.select.Select
 import com.vaadin.flow.component.textfield.TextArea
 import com.vaadin.flow.router.Route
@@ -12,19 +10,16 @@ import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
+import eu.zeletrik.devcore.shell.enumSelect
+import eu.zeletrik.devcore.shell.optionsRow
 import eu.zeletrik.devcore.shell.textArea
 
+/** Trim, dedupe and reorder lines. */
 @Route("line-tools", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class LineToolsView : TextToolView<TextArea>(Tool.LINE_TOOLS, textArea("Lines")) {
-	internal val order = Select<Order>().apply {
-		label = "Order"
-		setItems(*Order.entries.toTypedArray())
-		setItemLabelGenerator { it.label }
-		value = Order.AS_IS
-		addValueChangeListener { recompute() }
-	}
+	internal val order = enumSelect("Order", Order.entries, Order.AS_IS, Order::label) { recompute() }
 	internal val trim = option("Trim lines")
 	internal val removeEmpty = option("Remove empty lines")
 	internal val removeDuplicates = option("Remove duplicates")
@@ -33,8 +28,7 @@ class LineToolsView : TextToolView<TextArea>(Tool.LINE_TOOLS, textArea("Lines"))
 
 	init {
 		add(
-			HorizontalLayout(order, trim, removeEmpty, removeDuplicates, ignoreCase)
-				.apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true },
+			optionsRow(order, trim, removeEmpty, removeDuplicates, ignoreCase),
 			input,
 			output,
 		)

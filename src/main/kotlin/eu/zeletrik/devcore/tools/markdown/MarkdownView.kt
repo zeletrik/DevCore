@@ -10,6 +10,7 @@ import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textArea
 
+/** CommonMark with tables, strikethrough and autolinks, as HTML source. */
 @Route("markdown-to-html", layout = MainLayout::class)
 @SpringComponent
 @UIScope

@@ -7,7 +7,6 @@ import com.vaadin.flow.component.applayout.DrawerToggle
 import com.vaadin.flow.component.button.Button
 import com.vaadin.flow.component.button.ButtonVariant
 import com.vaadin.flow.component.html.Anchor
-import com.vaadin.flow.component.html.AnchorTarget
 import com.vaadin.flow.component.html.H1
 import com.vaadin.flow.component.html.Span
 import com.vaadin.flow.component.icon.SvgIcon
@@ -25,6 +24,10 @@ import com.vaadin.flow.router.RouterLink
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.info.BuildProperties
 
+/**
+ * The app shell: a drawer with the header links, tool search and grouped navigation, and a navbar with the current
+ * page's title and its favorite star. Recents are recorded here because every navigation passes through.
+ */
 class MainLayout(
 	private val favorites: Favorites,
 	internal val recents: Recents,
@@ -34,9 +37,7 @@ class MainLayout(
 	/** DevCore (Home), the version (About) and the repository, above the search. */
 	internal val home = RouterLink("DevCore", HomeView::class.java).apply { style.set("font-weight", "600") }
 	internal val version = RouterLink(buildProperties.ifAvailable?.version ?: "development", AboutView::class.java)
-	internal val repository = Anchor(Project.REPOSITORY_URL, SvgIcon("icons/github.svg")).apply {
-		setTarget(AnchorTarget.BLANK)
-		element.setAttribute("rel", "noopener noreferrer")
+	internal val repository = Anchor(Project.REPOSITORY_URL, SvgIcon("icons/github.svg")).openInNewTab().apply {
 		setAriaLabel("DevCore on GitHub")
 	}
 	internal val title = H1().apply {
@@ -44,7 +45,12 @@ class MainLayout(
 	}
 	internal val star = Button().apply {
 		addThemeVariants(ButtonVariant.TERTIARY)
-		addClickListener { currentTool?.let { favorites.toggle(it); renderStar(); renderNav(expandAll = false) } }
+		addClickListener {
+			val tool = currentTool ?: return@addClickListener
+			favorites.toggle(tool)
+			renderStar()
+			renderNav(expandAll = false)
+		}
 	}
 	internal val search = TextField("Search tools").apply {
 		valueChangeMode = ValueChangeMode.EAGER

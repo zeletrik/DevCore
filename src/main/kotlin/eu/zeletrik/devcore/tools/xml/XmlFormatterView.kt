@@ -1,6 +1,5 @@
 package eu.zeletrik.devcore.tools.xml
 
-import com.vaadin.flow.component.radiobutton.RadioButtonGroup
 import com.vaadin.flow.component.textfield.TextArea
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.spring.annotation.SpringComponent
@@ -9,18 +8,16 @@ import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
+import eu.zeletrik.devcore.shell.choice
 import eu.zeletrik.devcore.shell.textArea
 import eu.zeletrik.devcore.tools.json.Indent
 
+/** Pretty-prints or minifies XML. */
 @Route("xml-formatter", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class XmlFormatterView : TextToolView<TextArea>(Tool.XML, textArea("XML")) {
-	internal val indent = RadioButtonGroup("Indentation", *Indent.entries.toTypedArray()).apply {
-		setItemLabelGenerator { it.label }
-		value = Indent.TWO
-		addValueChangeListener { recompute() }
-	}
+	internal val indent = choice("Indentation", Indent.entries, Indent.TWO, Indent::label) { recompute() }
 	internal val output = OutputField("Formatted")
 
 	init {

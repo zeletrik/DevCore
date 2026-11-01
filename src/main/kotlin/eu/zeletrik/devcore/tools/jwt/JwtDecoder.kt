@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter.ISO_INSTANT
 import java.time.temporal.ChronoUnit
 import java.util.Base64
 
+/** The pretty-printed parts and the status line the view shows; nothing here is verified. */
 data class DecodedJwt(
 	val header: String,
 	val payload: String,
@@ -22,30 +23,32 @@ data class DecodedJwt(
 /** A signed JWT has three dot-separated parts; an encrypted one (JWE) has five. */
 internal const val JWS_PARTS = 3
 private const val JWE_PARTS = 5
+private val bearer = Regex("^bearer\\s+", RegexOption.IGNORE_CASE)
+internal val jwtMapper = JsonMapper()
+
+/** The dot-separated parts of a token, surrounding whitespace and a `Bearer ` prefix dropped. */
+internal fun jwtParts(text: String): List<String> = text.trim().replace(bearer, "").split('.')
 
 /** Decodes only — nothing here verifies a signature. */
 object JwtDecoder {
-	private val mapper = JsonMapper()
-	private val bearer = Regex("^bearer\\s+", RegexOption.IGNORE_CASE)
 	private val timeClaims = listOf("exp", "iat", "nbf")
 
 	fun decode(text: String, now: Instant): DecodedJwt {
-		val parts = text.trim().replace(bearer, "").split('.')
+		val parts = jwtParts(text)
 		if (parts.size == JWE_PARTS) throw IllegalArgumentException("Encrypted JWTs (JWE) aren't supported")
 		if (parts.size != JWS_PARTS) throw IllegalArgumentException("Not a JWT: expected 3 dot-separated parts")
 		val (headerJson, _) = jsonObject(parts[0], "Header")
 		val (payloadJson, claims) = jsonObject(parts[1], "Payload")
 
 		// A claim that is present but not a usable NumericDate is reported as such, never mistaken for an absent one.
-		val times = timeClaims.mapNotNull { claim -> claims.get(claim)?.let { claim to instantOf(it) } }
-		val exp = times.firstOrNull { it.first == "exp" }
-		val expiry = exp?.second
-		val nbf = times.firstOrNull { it.first == "nbf" }?.second
+		val times = timeClaims.mapNotNull { claim -> claims.get(claim)?.let { claim to instantOf(it) } }.toMap()
+		val expiry = times["exp"]
+		val notBefore = times["nbf"]
 		val status = when {
-			exp != null && expiry == null -> "Expiry not readable"
+			"exp" in times && expiry == null -> "Expiry not readable"
 			expiry != null && !now.isBefore(expiry) -> "Expired"
-			nbf != null && now.isBefore(nbf) -> "Not yet valid"
-			exp != null -> "Active"
+			notBefore != null && now.isBefore(notBefore) -> "Not yet valid"
+			expiry != null -> "Active"
 			else -> "No expiry"
 		}
 		val timeLines = times.map { (claim, instant) ->
@@ -66,7 +69,7 @@ object JwtDecoder {
 			throw IllegalArgumentException(message, e)
 		}
 		val node = try {
-			mapper.readTree(json)
+			jwtMapper.readTree(json)
 		} catch (e: JacksonException) {
 			throw IllegalArgumentException(message, e)
 		}

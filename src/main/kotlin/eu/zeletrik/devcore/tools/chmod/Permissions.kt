@@ -7,6 +7,8 @@ private const val TRIAD = "rwx"
 private const val PERMISSION_BITS = 9
 private const val ALL_PERMISSIONS = 0x1FF
 private const val SETUID = 0x800
+private const val SETGID = 0x400
+private const val STICKY = 0x200
 
 /** A Unix mode, 0–7777 octal: special bits (setuid 4, setgid 2, sticky 1), then owner, group and others. */
 object Permissions {
@@ -15,6 +17,13 @@ object Permissions {
 	// `ls -l` may add one marker: `.` (SELinux context), `@` (macOS extended attributes) or `+` (ACL).
 	private val symbolic = Regex("[-dlcbps]?([r-][w-][xsS-][r-][w-][xsS-][r-][w-][xtT-])[.@+]?")
 
+	/** The twelve bits a mode is made of: `rwxrwxrwx` from the owner's read down, then setuid, setgid, sticky. */
+	val bits: List<Int> = (0 until PERMISSION_BITS).map(::bit) + listOf(SETUID, SETGID, STICKY)
+
+	/**
+	 * Octal (`644`, `0644`, `4755`) or an `ls -l` mode (`rwxr-xr-x`, with or without the type letter and the trailing
+	 * `.`, `@` or `+` marker).
+	 */
 	fun parse(text: String): Int {
 		val value = text.trim()
 		octal.matchEntire(value)?.let { return it.groupValues[1].toInt(OCTAL) }
@@ -42,7 +51,7 @@ object Permissions {
 		for (i in 0 until PERMISSION_BITS) {
 			val set = mode and bit(i) != 0
 			val letter = TRIAD[i % TRIAD.length]
-			val specialBit = if (letter == 'x') mode and special(i) != 0 else false
+			val specialBit = letter == 'x' && mode and special(i) != 0
 			append(
 				when {
 					specialBit && i == PERMISSION_BITS - 1 -> if (set) 't' else 'T'

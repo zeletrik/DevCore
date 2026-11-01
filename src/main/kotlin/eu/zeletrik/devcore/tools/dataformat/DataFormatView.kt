@@ -11,30 +11,26 @@ import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
+import eu.zeletrik.devcore.shell.enumSelect
 import eu.zeletrik.devcore.shell.textArea
 
+/** JSON, YAML, TOML, properties and CSV in any direction. */
 @Route("data-format-converter", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class DataFormatView : TextToolView<TextArea>(Tool.DATA_FORMAT, textArea("Input")) {
-	internal val from = formatSelect("From", Format.JSON)
-	internal val to = formatSelect("To", Format.YAML)
+	internal val from = enumSelect("From", Format.entries, Format.JSON, Format::label) { recompute() }
+	internal val to = enumSelect("To", Format.entries, Format.YAML, Format::label) { recompute() }
 	internal val output = OutputField("Output")
 
 	init {
 		add(HorizontalLayout(from, to), input, output)
 	}
 
-	private fun formatSelect(label: String, initial: Format) = Select<Format>().apply {
-		this.label = label
-		setItems(*Format.entries.toTypedArray())
-		setItemLabelGenerator { it.label }
-		value = initial
-		addValueChangeListener { recompute() }
-	}
 
 	override fun render(text: String) {
-		val (source, target) = from.value to to.value
+		val source = from.value
+		val target = to.value
 		output.value = DeepWork.run { DataFormats.convert(text, source, target) }
 	}
 

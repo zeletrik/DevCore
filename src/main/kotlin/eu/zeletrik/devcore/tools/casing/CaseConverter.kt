@@ -1,5 +1,6 @@
 package eu.zeletrik.devcore.tools.casing
 
+/** The cases the converter writes, labelled as they look. */
 enum class Case(val label: String) {
 	CAMEL("camelCase"), PASCAL("PascalCase"), SNAKE("snake_case"), KEBAB("kebab-case"), CONSTANT("CONSTANT_CASE"),
 	DOT("dot.case"), TITLE("Title Case"), SENTENCE("Sentence case"), LOWER("lower case"), UPPER("UPPER CASE"),
@@ -12,7 +13,7 @@ object CaseConverter {
 	// Combining marks (U+0301 in a decomposed é, Devanagari vowel signs) are part of a word, not separators.
 	private val separator = Regex("[^\\p{L}\\p{M}\\p{N}]+")
 
-	fun words(line: String): List<String> =
+	private fun words(line: String): List<String> =
 		line.split(separator).filter { it.isNotEmpty() }.flatMap { it.split(boundary) }.map { it.lowercase() }
 
 	fun convert(text: String, case: Case): String = text.split("\n").joinToString("\n") { line -> convertLine(line, case) }

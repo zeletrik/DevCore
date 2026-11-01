@@ -17,14 +17,17 @@ object MorseCode {
 	/** Any Unicode space separates, the no-break space included (`\\s` alone is ASCII-only). */
 	private val separators = Regex("[\\s\\p{Z}]+")
 
+	/** Letters separated by a space, words by ` / `; any Unicode space in the input separates words. */
 	fun encode(text: String): String =
 		text.trim().split(separators).filter { it.isNotEmpty() }.joinToString(" / ") { word ->
-		word.codePoints().toArray().joinToString(" ") { cp ->
-			val char = String(Character.toChars(cp))
-			char.singleOrNull()?.let { codes[it.uppercaseChar()] } ?: throw IllegalArgumentException("No Morse code for '$char'")
+			word.codePoints().toArray().joinToString(" ") { cp ->
+				val char = Character.toString(cp)
+				char.singleOrNull()?.let { codes[it.uppercaseChar()] }
+					?: throw IllegalArgumentException("No Morse code for '$char'")
+			}
 		}
-	}
 
+	/** Accepts `.`, `-`, `/` and spaces only; a lone unknown group is an error, not skipped. */
 	fun decode(text: String): String {
 		require(text.all { it == '.' || it == '-' || it == '/' || it.isWhitespace() }) {
 			"Morse code may contain only '.', '-', '/' and spaces"

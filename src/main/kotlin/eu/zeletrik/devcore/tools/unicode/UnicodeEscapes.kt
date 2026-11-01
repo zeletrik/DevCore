@@ -1,5 +1,6 @@
 package eu.zeletrik.devcore.tools.unicode
 
+/** How a code point is written: `\\uXXXX` pairs, `\\u{X}` or `U+X`. */
 enum class EscapeFormat(val label: String) {
 	UTF16("\\uXXXX"),
 	BRACED("\\u{X}"),
@@ -8,7 +9,9 @@ enum class EscapeFormat(val label: String) {
 }
 
 private const val ASCII_MAX = 0x7F
+private const val HEX = 16
 
+/** Escapes code points in each [EscapeFormat] and decodes all of them, plus HTML numeric references. */
 object UnicodeEscapes {
 	private val REPLACEMENT = Char(0xFFFD)
 
@@ -43,9 +46,9 @@ object UnicodeEscapes {
 			val hex = match.groups["hex"]?.value
 			val decimal = match.groups["decimal"]?.value
 			when {
-				utf16 != null -> utf16.toInt(16).toChar().toString()
-				braced != null -> codePoint(braced.toInt(16)) ?: match.value
-				hex != null -> hex.toIntOrNull(16)?.let(::codePoint) ?: match.value
+				utf16 != null -> utf16.toInt(HEX).toChar().toString()
+				braced != null -> codePoint(braced.toInt(HEX)) ?: match.value
+				hex != null -> hex.toIntOrNull(HEX)?.let(::codePoint) ?: match.value
 				decimal != null -> decimal.toIntOrNull()?.let(::codePoint) ?: match.value
 				else -> decodeRun(match.value)
 			}
@@ -53,12 +56,15 @@ object UnicodeEscapes {
 		return replaceLoneSurrogates(decoded)
 	}
 
-	/** `U+0048 U+0069` → `Hi`: a run's tokens collapse into characters; a token that isn't 4–6 digits stays. */
+	/**
+	 * `U+0048 U+0069` → `Hi`: decoded tokens join without spaces; a token that isn't 4–6 digits stays as written,
+	 * keeping the spaces around it.
+	 */
 	private fun decodeRun(run: String): String {
 		val raw = run.split(' ')
 		val tokens = raw.map { token ->
 			val digits = token.removePrefix("U+")
-			if (digits.length in 4..6) codePoint(digits.toInt(16)) else null
+			if (digits.length in 4..6) codePoint(digits.toInt(HEX)) else null
 		}
 		return buildString {
 			tokens.forEachIndexed { i, char ->
@@ -68,8 +74,9 @@ object UnicodeEscapes {
 		}
 	}
 
-	private fun codePoint(cp: Int) = cp.takeIf { it <= Character.MAX_CODE_POINT }?.let { String(Character.toChars(it)) }
+	private fun codePoint(cp: Int) = if (Character.isValidCodePoint(cp)) Character.toString(cp) else null
 
+	/** A separate pass: a surrogate pair arrives as two UTF-16 escapes, so pairing is only known once both are decoded. */
 	private fun replaceLoneSurrogates(text: String) = buildString {
 		var i = 0
 		while (i < text.length) {

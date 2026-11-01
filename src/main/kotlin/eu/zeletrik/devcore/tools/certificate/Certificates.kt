@@ -61,33 +61,36 @@ object Certificates {
 	)
 	private val bouncyCastle = BouncyCastleProvider()
 
+	/** One or more PEM certificates (a chain is numbered) or PKCS#10 requests; other blocks and text are ignored. */
 	fun decode(text: String, now: Instant): String {
 		// Only certificate and request blocks are decoded; anything else, private keys included, is never read.
 		val blocks = blocks(text).filter { (label, _) -> label == "CERTIFICATE" || label in requestLabels }
 		require(blocks.isNotEmpty()) { "No PEM certificate or certificate request found" }
-		val certificates = blocks.count { it.first == "CERTIFICATE" }
+		val total = blocks.count { it.first == "CERTIFICATE" }
 		var index = 0
 		return blocks.joinToString("\n\n") { (label, body) ->
-			if (label == "CERTIFICATE") {
-				index++
-				val unreadable = "Certificate $index could not be read"
-				val certificate = try {
-					val der = ByteArrayInputStream(der(body, unreadable))
-					CertificateFactory.getInstance("X.509").generateCertificate(der) as X509Certificate
-				} catch (e: CertificateException) {
-					throw IllegalArgumentException(unreadable, e)
-				}
-				"Certificate $index of $certificates\n" + describe(certificate, now)
-			} else {
-				val unreadable = "The certificate request could not be read"
-				val request = try {
-					PKCS10CertificationRequest(der(body, unreadable))
-				} catch (e: IOException) {
-					throw IllegalArgumentException(unreadable, e)
-				}
-				"Certificate request\n" + describe(request)
-			}
+			if (label == "CERTIFICATE") certificate(body, ++index, total, now) else request(body)
 		}
+	}
+
+	private fun certificate(body: String, index: Int, total: Int, now: Instant): String {
+		val unreadable = "Certificate $index could not be read"
+		val certificate = try {
+			CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(der(body, unreadable)))
+		} catch (e: CertificateException) {
+			throw IllegalArgumentException(unreadable, e)
+		}
+		return "Certificate $index of $total\n" + describe(certificate as X509Certificate, now)
+	}
+
+	private fun request(body: String): String {
+		val unreadable = "The certificate request could not be read"
+		val request = try {
+			PKCS10CertificationRequest(der(body, unreadable))
+		} catch (e: IOException) {
+			throw IllegalArgumentException(unreadable, e)
+		}
+		return "Certificate request\n" + describe(request)
 	}
 
 	private fun der(body: String, unreadable: String): ByteArray = try {
@@ -132,12 +135,12 @@ object Certificates {
 	}
 
 	private fun describe(request: PKCS10CertificationRequest): String {
-		val sans = request.getAttributes(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest).flatMap { attribute ->
-			attribute.attrValues.map { value ->
+		val sans = request.getAttributes(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest)
+			.flatMap { attribute -> attribute.attrValues.toList() }
+			.flatMap { value ->
 				GeneralNames.fromExtensions(Extensions.getInstance(value), Extension.subjectAlternativeName)?.names.orEmpty()
 					.toList()
-			}.flatten()
-		}
+			}
 		val signature = verify(request)
 		return listOfNotNull(
 			"Subject: ${request.subject}",
@@ -176,33 +179,27 @@ object Certificates {
 		}
 	}
 
-	/** PEM blocks found in one pass over the markers, so unmatched BEGIN lines can't make the scan quadratic. */
+	/** PEM blocks in one pass over the markers: the latest BEGIN is open until an END with its label. */
 	private fun blocks(text: String): List<Pair<String, String>> {
-		val markers = marker.findAll(text).toList()
-		val ends = markers.filter { it.groupValues[1] == "END" }.groupBy({ it.groupValues[2] }, { it.range.first })
-		val nextEnd = mutableMapOf<String, Int>()
 		val found = mutableListOf<Pair<String, String>>()
-		var after = 0
-		for (begin in markers.filter { it.groupValues[1] == "BEGIN" }) {
-			val label = begin.groupValues[2]
-			val candidates = ends[label].orEmpty()
-			var i = nextEnd[label] ?: 0
-			while (i < candidates.size && candidates[i] < begin.range.last) i++
-			nextEnd[label] = i
-			// A BEGIN inside the previous block, or without a matching END after it, starts nothing.
-			val end = candidates.getOrNull(i)
-			if (end != null && begin.range.first >= after) {
-				found += label to text.substring(begin.range.last + 1, end)
-				after = end
+		var begin: MatchResult? = null
+		for (match in marker.findAll(text)) {
+			val (kind, label) = match.destructured
+			if (kind == "BEGIN") {
+				begin = match
+			} else if (begin != null && label == begin.groupValues[2]) {
+				found += label to text.substring(begin.range.last + 1, match.range.first)
+				begin = null
 			}
 		}
 		return found
 	}
 
+	private val signatureName = Regex("(?i)SHA(\\d+)WITH(RSA|ECDSA|DSA)(?:ENCRYPTION)?")
+
 	/** `SHA256withRSA` → `SHA-256 with RSA`. */
 	private fun signature(name: String) =
-		Regex("(?i)SHA(\\d+)WITH(RSA|ECDSA|DSA)(?:ENCRYPTION)?").matchEntire(name)
-			?.let { "SHA-${it.groupValues[1]} with ${it.groupValues[2].uppercase()}" } ?: name
+		signatureName.matchEntire(name)?.let { "SHA-${it.groupValues[1]} with ${it.groupValues[2].uppercase()}" } ?: name
 }
 
 /** Public key descriptions: algorithm and size, or the curve. */
@@ -235,6 +232,7 @@ private object AlternativeNames {
 
 	/** A certificate's SAN as the JDK reports it: strings for most types, DER bytes for otherName and friends. */
 	fun san(type: Int, value: Any?): String = when {
+		// The JDK hands IPv6 SANs over uncompressed; re-parsed as a literal (never resolved) for the RFC 5952 form.
 		type == SAN_IP && value is String -> "IP " + ipText(InetAddress.ofLiteral(value).address)
 		type == SAN_OTHER && value is ByteArray -> "Other (${otherName(value).typeID.id})"
 		value is ByteArray -> "Other (${otherTypes[type] ?: "type $type"})"

@@ -12,6 +12,7 @@ import com.vaadin.flow.router.RouterLink
 
 @Route("", layout = MainLayout::class)
 @PageTitle("DevCore")
+/** The landing page: favorites, recents, then every visible tool as a card, grouped by category. */
 class HomeView(favorites: Favorites, recents: Recents, catalog: ToolCatalog) : VerticalLayout() {
 	init {
 		add(Paragraph(Project.INTRO).apply { style.set("margin", "0").set("color", "var(--vaadin-text-color-secondary)") })

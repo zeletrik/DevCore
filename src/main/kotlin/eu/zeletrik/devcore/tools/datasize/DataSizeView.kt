@@ -11,19 +11,15 @@ import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
+import eu.zeletrik.devcore.shell.enumSelect
 import eu.zeletrik.devcore.shell.textLine
 
+/** A value in one unit shown in every unit. */
 @Route("data-size-converter", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class DataSizeView : TextToolView<TextField>(Tool.DATA_SIZE, textLine("Value")) {
-	internal val unit = Select<DataUnit>().apply {
-		label = "Unit"
-		setItems(*DataUnit.entries.toTypedArray())
-		setItemLabelGenerator { it.label }
-		value = DataUnit.MB
-		addValueChangeListener { recompute() }
-	}
+	internal val unit = enumSelect("Unit", DataUnit.entries, DataUnit.MB, DataUnit::label) { recompute() }
 	internal val output = OutputField("In every unit")
 
 	init {

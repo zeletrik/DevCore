@@ -10,11 +10,12 @@ import com.vaadin.flow.server.streams.DownloadResponse
 import eu.zeletrik.devcore.tools.codes.CodeImage
 import java.io.ByteArrayInputStream
 
-/** Preview plus PNG and SVG downloads, all served from DevCore itself (no data: URLs, so the CSP stays at 'self'). */
+/** Preview plus PNG and SVG downloads, served from DevCore's own origin as streams, never inlined as data: URLs. */
 class CodeImageView(private val name: String) : VerticalLayout() {
 	internal val image = Image().apply { setAlt(name) }
 	internal val png = Anchor().apply { text = "Download PNG" }
 	internal val svg = Anchor().apply { text = "Download SVG" }
+	/** What is shown right now; null while hidden. */
 	internal var current: CodeImage? = null
 		private set
 
@@ -24,6 +25,7 @@ class CodeImageView(private val name: String) : VerticalLayout() {
 		show(null)
 	}
 
+	/** Replaces the preview and both downloads, or hides them when [code] is null (empty or invalid input). */
 	fun show(code: CodeImage?) {
 		current = code
 		image.isVisible = code != null

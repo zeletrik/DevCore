@@ -12,6 +12,7 @@ import eu.zeletrik.devcore.shell.Tool
 import eu.zeletrik.devcore.shell.textArea
 import eu.zeletrik.devcore.shell.textLine
 
+/** A key turns every output into the HMAC of the same algorithm, relabeled to say so. */
 @Route("hash-generator", layout = MainLayout::class)
 @SpringComponent
 @UIScope

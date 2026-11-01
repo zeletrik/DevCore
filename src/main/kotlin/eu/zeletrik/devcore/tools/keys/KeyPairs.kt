@@ -8,6 +8,7 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPublicKey
 import java.util.Base64
 
+/** The key types offered; [bits] is the RSA size, null for Ed25519. */
 enum class KeyAlgorithm(val label: String, val bits: Int?) {
 	ED25519("Ed25519", bits = null),
 	RSA_2048("RSA 2048", bits = 2048),
@@ -58,5 +59,6 @@ object KeyPairs {
 		write(bytes)
 	}
 
+	/** RFC 4251 mpint; BigInteger.toByteArray already gives the two's-complement form with a leading zero where needed. */
 	private fun DataOutputStream.mpint(value: BigInteger) = string(value.toByteArray())
 }

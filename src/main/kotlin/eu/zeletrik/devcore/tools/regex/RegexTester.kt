@@ -2,12 +2,14 @@ package eu.zeletrik.devcore.tools.regex
 
 import eu.zeletrik.devcore.shell.BoundedWriter
 import eu.zeletrik.devcore.tools.FieldError
+import java.util.regex.Matcher
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 
 /** Matching checks the clock once every 1024 character reads. */
 private const val CLOCK_CHECK_MASK = 0x3FF
 
+/** The `java.util.regex` flags offered; ignore case is Unicode-aware. */
 enum class RegexFlag(val label: String, val bits: Int) {
 	IGNORE_CASE("Ignore case", Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE),
 	MULTILINE("Multiline", Pattern.MULTILINE),
@@ -20,14 +22,19 @@ enum class RegexFlag(val label: String, val bits: Int) {
  * server).
  */
 object RegexTester {
-	const val LISTED = 1000
-	const val SHOWN = 200
+	private const val LISTED = 1000
+	private const val SHOWN = 200
 	const val STOPPED = "Stopped after 1 second: the pattern backtracks too much on this text"
 	private const val BUDGET_NANOS = 1_000_000_000L
 
-	/** Thrown when evaluation runs past its deadline; deliberately not an IllegalArgumentException. */
+	/**
+	 * Thrown when evaluation runs past its deadline. Not an IllegalArgumentException on purpose: the view reports it on
+	 * the pattern, and `optional` would otherwise swallow it as the replacement field's error. Built without a stack
+	 * trace, since it is thrown from the hot character-read path.
+	 */
 	class Timeout : RuntimeException(STOPPED, null, false, false)
 
+	/** One budget for a whole evaluation: the view passes the same deadline to [list] and [replace]. */
 	fun deadline() = System.nanoTime() + BUDGET_NANOS
 
 	fun compile(pattern: String, flags: Set<RegexFlag>): Pattern = try {
@@ -45,13 +52,10 @@ object RegexTester {
 		while (matcher.find()) {
 			count++
 			if (count > LISTED) continue
-			body.append("\n#").append(count.toString()).append(' ').append(span(matcher.start(), matcher.end(), matcher.group()))
+			body.append("\n#$count ${span(matcher, 0)}")
 			for (group in 1..matcher.groupCount()) {
 				val label = names[group] ?: group.toString()
-				body.append("\n  ").append(label).append(": ")
-				body.append(
-					if (matcher.start(group) < 0) "no match" else span(matcher.start(group), matcher.end(group), matcher.group(group))
-				)
+				body.append("\n  $label: ${span(matcher, group)}")
 			}
 		}
 		val header = if (count == 1) "1 match" else "$count matches"
@@ -83,6 +87,10 @@ object RegexTester {
 		return out.toString()
 	}
 
+	/** `[start, end) "text"` for [group] (0 is the whole match), or `no match` when it did not take part. */
+	private fun span(matcher: Matcher, group: Int) =
+		if (matcher.start(group) < 0) "no match" else span(matcher.start(group), matcher.end(group), matcher.group(group))
+
 	/** Long values are cut to [SHOWN] characters; the offsets still give their full extent. */
 	private fun span(start: Int, end: Int, value: String): String {
 		val shown = if (value.length > SHOWN) value.take(SHOWN) + "…" else value
@@ -96,7 +104,7 @@ object RegexTester {
 		override val length get() = text.length
 
 		override fun get(index: Int): Char {
-			if (++reads and CLOCK_CHECK_MASK == 0 && System.nanoTime() > deadline) throw Timeout()
+			if ((++reads and CLOCK_CHECK_MASK) == 0 && System.nanoTime() > deadline) throw Timeout()
 			return text[index]
 		}
 
@@ -104,5 +112,4 @@ object RegexTester {
 
 		override fun toString() = text.toString()
 	}
-
 }

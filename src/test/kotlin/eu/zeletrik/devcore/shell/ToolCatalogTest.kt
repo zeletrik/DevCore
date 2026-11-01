@@ -6,7 +6,6 @@ import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 
 @ExtendWith(OutputCaptureExtension::class)
 class ToolCatalogTest {
@@ -17,7 +16,6 @@ class ToolCatalogTest {
 	fun `hidden ids are trimmed, blanks skipped, and each unknown id warned about once`(output: CapturedOutput) {
 		val catalog = catalog(hidden = listOf(" base64 ", "", "nope", "nope"))
 		assertFalse(catalog.isVisible(Tool.BASE64))
-		assertNull(catalog.byId("base64"))
 		assertEquals(Tool.sorted() - Tool.BASE64, catalog.visible)
 		assertEquals(1, Regex("Ignoring unknown tool id 'nope' in DEVCORE_TOOLS_HIDDEN").findAll(output.out).count())
 	}

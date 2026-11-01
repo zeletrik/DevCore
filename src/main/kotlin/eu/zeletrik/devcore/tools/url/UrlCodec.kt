@@ -3,6 +3,7 @@ package eu.zeletrik.devcore.tools.url
 import org.springframework.web.util.UriUtils
 import java.net.URLDecoder
 
+/** RFC 3986 percent-encoding and query-string decoding. */
 object UrlCodec {
 	/** Leaves exactly the RFC 3986 unreserved set (A–Z a–z 0–9 - . _ ~) unencoded. */
 	fun encode(text: String): String = UriUtils.encode(text, Charsets.UTF_8)

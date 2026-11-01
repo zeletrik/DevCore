@@ -1,6 +1,7 @@
 package eu.zeletrik.devcore.tools.codes
 
 import com.google.zxing.common.BitMatrix
+import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
@@ -11,10 +12,13 @@ class CodeImage(val png: ByteArray, val svg: String)
 
 /** Black modules on white; a 1D matrix (one row) is drawn as bars of [barHeight] modules. */
 object CodeImages {
-	/** QR: exactly 4 quiet-zone modules, at the largest whole-pixel module size that fits in 512 px. */
+	/** Fits in 512 px with exactly 4 quiet-zone modules each side, at the largest whole-pixel module size. */
+	private const val QR_PIXELS = 512
+	private const val QR_QUIET = 4
+
 	fun qr(matrix: BitMatrix): CodeImage {
-		val size = (512 / (matrix.width + 8)).coerceAtLeast(1)
-		return render(matrix, quiet = 4, module = size, barHeight = null)
+		val module = (QR_PIXELS / (matrix.width + 2 * QR_QUIET)).coerceAtLeast(1)
+		return render(matrix, quiet = QR_QUIET, module = module, barHeight = null)
 	}
 
 	/** Barcodes keep the quiet zones the encoder already added. */
@@ -27,16 +31,21 @@ object CodeImages {
 
 	private fun image(modules: Modules, module: Int): BufferedImage {
 		val image = BufferedImage(modules.columns * module, modules.rows * module, BufferedImage.TYPE_BYTE_GRAY)
+		val g = image.createGraphics()
+		g.color = Color.WHITE
+		g.fillRect(0, 0, image.width, image.height)
+		g.color = Color.BLACK
 		for (y in 0 until modules.rows) for (x in 0 until modules.columns) {
-			val rgb = if (modules.dark(x, y)) 0x000000 else 0xFFFFFF
-			for (dy in 0 until module) for (dx in 0 until module) image.setRGB(x * module + dx, y * module + dy, rgb)
+			if (modules.dark(x, y)) g.fillRect(x * module, y * module, module, module)
 		}
+		g.dispose()
 		return image
 	}
 
 	/** One path for all dark modules: each horizontal run of them is one rectangle. */
 	private fun svg(modules: Modules, module: Int): String {
-		val (columns, rows) = modules.columns to modules.rows
+		val columns = modules.columns
+		val rows = modules.rows
 		val path = buildString {
 			for (y in 0 until rows) {
 				var x = 0
@@ -75,10 +84,8 @@ private class Modules(private val matrix: BitMatrix, private val quiet: Int, pri
 
 	fun dark(x: Int, y: Int): Boolean {
 		val mx = x - quiet
-		val my = if (barHeight != null) 0 else y - quiet
-		val inside = mx in 0 until matrix.width && (
-			barHeight != null && y - quiet in 0 until barHeight || my in 0 until matrix.height
-		)
-		return inside && matrix[mx, my]
+		val my = y - quiet
+		if (mx !in 0 until matrix.width || my !in 0 until (barHeight ?: matrix.height)) return false
+		return matrix[mx, if (barHeight != null) 0 else my]
 	}
 }

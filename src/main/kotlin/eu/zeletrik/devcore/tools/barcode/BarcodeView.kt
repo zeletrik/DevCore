@@ -10,20 +10,16 @@ import eu.zeletrik.devcore.shell.MainLayout
 import eu.zeletrik.devcore.shell.OutputField
 import eu.zeletrik.devcore.shell.TextToolView
 import eu.zeletrik.devcore.shell.Tool
+import eu.zeletrik.devcore.shell.enumSelect
 import eu.zeletrik.devcore.shell.textLine
 import eu.zeletrik.devcore.tools.codes.CodeImages
 
+/** Code 128, Code 39 or a GS1 symbology with its check digit, as an image with PNG and SVG downloads. */
 @Route("barcode-generator", layout = MainLayout::class)
 @SpringComponent
 @UIScope
 class BarcodeView : TextToolView<TextField>(Tool.BARCODE, textLine("Value")) {
-	internal val symbology = Select<Symbology>().apply {
-		label = "Format"
-		setItems(*Symbology.entries.toTypedArray())
-		setItemLabelGenerator { it.label }
-		value = Symbology.CODE_128
-		addValueChangeListener { recompute() }
-	}
+	internal val symbology = enumSelect("Format", Symbology.entries, Symbology.CODE_128, Symbology::label) { recompute() }
 	internal val encoded = OutputField("Encoded value")
 	internal val code = CodeImageView("barcode")
 

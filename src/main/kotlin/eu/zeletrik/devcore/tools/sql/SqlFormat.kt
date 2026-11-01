@@ -4,6 +4,7 @@ import com.github.vertical_blank.sqlformatter.SqlFormatter
 import com.github.vertical_blank.sqlformatter.core.FormatConfig
 import com.github.vertical_blank.sqlformatter.languages.Dialect
 
+/** The dialects of the sql-formatter library offered. */
 enum class SqlDialect(val label: String, val dialect: Dialect) {
 	STANDARD("Standard SQL", Dialect.StandardSql),
 	POSTGRESQL("PostgreSQL", Dialect.PostgreSql),
@@ -15,8 +16,7 @@ enum class SqlDialect(val label: String, val dialect: Dialect) {
 
 /** A formatter, not a validator: any text within the size and nesting caps is laid out, nothing else is rejected. */
 object SqlFormat {
-	// NOTE: the formatter splits PostgreSQL casts (a::int → a :: INT); shielding `::` inside an identifier keeps them
-	// intact.
+	// NOTE: the formatter splits PostgreSQL casts (a::int → a :: INT); an identifier-safe stand-in for `::` keeps them.
 	private const val CAST = "__devcore_cast__"
 	private const val MAX_CHARS = 100_000
 	private const val MAX_DEPTH = 100
@@ -26,8 +26,9 @@ object SqlFormat {
 		require(sql.length <= MAX_CHARS) { "Input is too large for the SQL Formatter (max 100,000 characters)" }
 		require(nesting(sql) <= MAX_DEPTH) { "Parentheses nested too deeply (max 100)" }
 		val config = FormatConfig.builder().indent(" ".repeat(indent)).uppercase(uppercase).linesBetweenQueries(2).build()
-		val shielded = if (CAST in sql) sql else sql.replace("::", CAST)
-		return SqlFormatter.of(dialect.dialect).format(shielded, config).replace(CAST, "::")
+		val shield = CAST !in sql
+		val formatted = SqlFormatter.of(dialect.dialect).format(if (shield) sql.replace("::", CAST) else sql, config)
+		return if (shield) formatted.replace(CAST, "::") else formatted
 	}
 
 	/** The deepest parenthesis nesting outside quoted literals and comments. */

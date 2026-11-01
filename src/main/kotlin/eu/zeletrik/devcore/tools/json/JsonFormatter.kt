@@ -12,14 +12,18 @@ import tools.jackson.core.util.DefaultPrettyPrinter
 import tools.jackson.core.util.Separators
 import tools.jackson.databind.json.JsonMapper
 
+/** Indentation for the JSON and XML formatters; [MINIFIED] writes no whitespace at all. */
 enum class Indent(val label: String, val spaces: Int) {
 	TWO("2 spaces", spaces = 2), FOUR("4 spaces", spaces = 4), MINIFIED("Minified", spaces = 0)
 }
 
 private const val MAX_UNQUOTE_PASSES = 32
-private val BYTE_ORDER_MARK = Char(0xFEFF).toString()
 private val FORM_FEED = Char(12)
 
+/** Stripped from pasted text before parsing: editors often prepend it, and parsers reject it. */
+internal val BYTE_ORDER_MARK = Char(0xFEFF).toString()
+
+/** Pretty-prints or minifies JSON as written: no key reordering, no number normalization, duplicates kept. */
 object JsonFormatter {
 	private val mapper = JsonMapper()
 
@@ -117,7 +121,7 @@ object JsonFormatter {
 	}
 
 	/** Expansion stacks embedded documents, so the combined depth is only checked while writing. */
-	private fun invalid(e: JacksonException) =
+	internal fun invalid(e: JacksonException) =
 		if (e is StreamConstraintsException && "StreamWriteConstraints" in e.originalMessage) {
 			IllegalArgumentException("Invalid JSON: nested too deeply (max 500 levels)", e)
 		} else {
