@@ -1,10 +1,9 @@
 package eu.zeletrik.devcore.shell
 
 /**
- * How DevCore presents itself: the repository link, the one-line description, Home's introduction and the theme color.
+ * How DevCore presents itself: the one-line description, Home's introduction and the theme color.
  */
 object Project {
-	const val REPOSITORY_URL = "https://github.com/zeletrik/devcore"
 	const val DESCRIPTION =
 		"Self-hosted developer toolbox: 40 tools for JSON, encoding, JWT, hashes, time, networks and more."
 	const val INTRO =

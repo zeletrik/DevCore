@@ -25,7 +25,10 @@ private const val BUNDLED = "META-INF/devcore/"
 /** Version, release notes and licenses. Not a tool: it isn't in the registry, search, Home, favorites or recents. */
 @Route("about", layout = MainLayout::class)
 @PageTitle("About — DevCore")
-class AboutView(buildProperties: ObjectProvider<BuildProperties>) : VerticalLayout() {
+class AboutView(
+	properties: DevCoreProperties,
+	buildProperties: ObjectProvider<BuildProperties>,
+) : VerticalLayout() {
 	private val build = buildProperties.ifAvailable
 	internal val version = Paragraph("Version ${build?.version ?: "development"}")
 	internal val built = Paragraph("Built ${build?.time ?: "locally"}")
@@ -41,9 +44,9 @@ class AboutView(buildProperties: ObjectProvider<BuildProperties>) : VerticalLayo
 			version,
 			built,
 			HorizontalLayout(
-				link(Project.REPOSITORY_URL, "GitHub repository"),
-				link("${Project.REPOSITORY_URL}/releases", "Releases"),
-				link("${Project.REPOSITORY_URL}/security/policy", "Security policy"),
+				link(properties.repository.url, "GitHub repository"),
+				link("${properties.repository.url}/releases", "Releases"),
+				link("${properties.repository.url}/security/policy", "Security policy"),
 			),
 			H3("What's new"),
 			whatsNew,

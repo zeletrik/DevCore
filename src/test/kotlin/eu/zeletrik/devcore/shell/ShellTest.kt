@@ -22,8 +22,13 @@ import kotlin.time.Duration.Companion.milliseconds
 /** The shell's own logic: the catalog, the cookies, the release notes and deep work, without a UI. */
 @ExtendWith(OutputCaptureExtension::class)
 class ShellTest {
-	private fun catalog(hidden: List<String> = emptyList(), defaults: List<String> = emptyList()) =
-		ToolCatalog(DevCoreProperties(DevCoreProperties.Tools(hidden), DevCoreProperties.FavoriteDefaults(defaults)))
+	private fun catalog(hidden: List<String> = emptyList(), defaults: List<String> = emptyList()) = ToolCatalog(
+		DevCoreProperties(
+			DevCoreProperties.Tools(hidden),
+			DevCoreProperties.FavoriteDefaults(defaults),
+			DevCoreProperties.Repository("https://github.com/zeletrik/devcore"),
+		)
+	)
 
 	@Test
 	fun `hidden ids are trimmed, blanks skipped, and each unknown id warned about once`(output: CapturedOutput) {

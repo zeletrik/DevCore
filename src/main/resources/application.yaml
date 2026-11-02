@@ -26,3 +26,7 @@ management:
         include: health
       discovery:
         enabled: false
+devcore:
+  # The header and About link here; About adds GitHub's /releases and /security/policy pages to it.
+  repository:
+    url: https://github.com/zeletrik/devcore

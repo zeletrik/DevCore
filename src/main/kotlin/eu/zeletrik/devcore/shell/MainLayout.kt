@@ -32,12 +32,13 @@ class MainLayout(
 	private val favorites: Favorites,
 	internal val recents: Recents,
 	private val catalog: ToolCatalog,
+	properties: DevCoreProperties,
 	buildProperties: ObjectProvider<BuildProperties>,
 ) : AppLayout(), AfterNavigationObserver {
 	/** DevCore (Home), the version (About) and the repository, above the search. */
 	internal val home = RouterLink("DevCore", HomeView::class.java).apply { style.set("font-weight", "600") }
 	internal val version = RouterLink(buildProperties.ifAvailable?.version ?: "development", AboutView::class.java)
-	internal val repository = Anchor(Project.REPOSITORY_URL, SvgIcon("icons/github.svg")).openInNewTab().apply {
+	internal val repository = Anchor(properties.repository.url, SvgIcon("icons/github.svg")).openInNewTab().apply {
 		setAriaLabel("DevCore on GitHub")
 	}
 	internal val title = H1().apply {

@@ -6,7 +6,7 @@ import com.vaadin.flow.spring.annotation.UIScope
 /** The last tools opened in this browser, most recent first, kept in a cookie like favorites. */
 @SpringComponent
 @UIScope
-class Recents(catalog: ToolCatalog) {
+class Recents(private val catalog: ToolCatalog) {
 	private val cookie = ToolCookie(COOKIE)
 	private val tools = cookie.read().orEmpty().filter(catalog::isVisible).take(LIMIT).toMutableList()
 

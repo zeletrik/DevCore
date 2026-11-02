@@ -17,6 +17,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+private const val REPOSITORY = "https://github.com/zeletrik/devcore"
+
 /** The sidebar as labels: top-level entries as is, grouped tools as "Category/Tool". */
 private fun MainLayout.navTree(): List<String> = nav.items.flatMap { item ->
 	if (item.items.isEmpty()) listOf(item.label) else item.items.map { "${item.label}/${it.label}" }
@@ -137,7 +139,7 @@ class ShellBrowserlessTest : SpringBrowserlessTest() {
 		assertEquals("DevCore", layout.home.text)
 		assertEquals("", layout.home.href)
 		assertEquals("about", layout.version.href)
-		assertEquals(Project.REPOSITORY_URL, layout.repository.href)
+		assertEquals(REPOSITORY, layout.repository.href)
 		assertEquals("_blank", layout.repository.element.getAttribute("target"))
 		assertEquals("noopener noreferrer", layout.repository.element.getAttribute("rel"))
 		assertEquals("DevCore on GitHub", layout.repository.ariaLabel.orElse(""))
@@ -172,9 +174,9 @@ class ShellBrowserlessTest : SpringBrowserlessTest() {
 		val credits = findInView(Paragraph::class.java).all()
 		assertTrue(credits.any { "EFF Large Wordlist (CC BY 3.0 US)" in it.text && "color-name (MIT)" in it.text })
 		val links = findInView(Anchor::class.java).all().associate { it.text to it.href }
-		assertEquals(Project.REPOSITORY_URL, links["GitHub repository"])
-		assertEquals("${Project.REPOSITORY_URL}/releases", links["Releases"])
-		assertEquals("${Project.REPOSITORY_URL}/security/policy", links["Security policy"])
+		assertEquals(REPOSITORY, links["GitHub repository"])
+		assertEquals("$REPOSITORY/releases", links["Releases"])
+		assertEquals("$REPOSITORY/security/policy", links["Security policy"])
 	}
 }
 
