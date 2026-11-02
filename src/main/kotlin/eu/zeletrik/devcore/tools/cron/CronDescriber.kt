@@ -105,14 +105,17 @@ private object Days {
 			quartz && value == "L" -> "on Saturday"
 			items.any { it.endsWith("L") || "#" in it } ->
 				"on " + andList(items.map { weekdayOfMonth(it, quartz) }) + " of the month"
+
 			"/" in value -> {
 				// `*` covers 0–6 in Unix (from Sunday), 1–7 in Spring (from Monday) and 1–7 in Quartz (from Sunday).
 				val all = if (flavor == CronFlavor.UNIX) 0..6 else 1..7
 				val numbers = expand(value, all) { dayNumber(it, quartz) }.distinctBy { dayIndex(it, quartz) }
 				"on " + andList(numbers.map { days[dayIndex(it, quartz)] })
 			}
+
 			"-" in value && "," !in value ->
 				value.split("-").let { (a, b) -> "${dayName(a, quartz)} through ${dayName(b, quartz)}" }
+
 			else -> "on " + andList(items.map { dayName(it, quartz) })
 		}
 	}
@@ -123,6 +126,7 @@ private object Days {
 			val ordinal = ordinals.getOrNull(item.substringAfter('#').toInt() - 1) ?: item.substringAfter('#')
 			"the $ordinal ${dayName(item.substringBefore('#'), quartz)}"
 		}
+
 		item.endsWith("L") -> "the last ${dayName(item.removeSuffix("L"), quartz)}"
 		else -> dayName(item, quartz)
 	}

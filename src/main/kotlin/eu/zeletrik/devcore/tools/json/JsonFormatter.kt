@@ -41,7 +41,8 @@ object JsonFormatter {
 
 	private fun write(text: String, indent: Indent, expand: Boolean): String {
 		val out = BoundedWriter()
-		val writer = if (indent == Indent.MINIFIED) mapper.writer() else mapper.writer().with(prettyPrinter(indent.spaces))
+		val writer =
+			if (indent == Indent.MINIFIED) mapper.writer() else mapper.writer().with(prettyPrinter(indent.spaces))
 		mapper.createParser(text).use { parser ->
 			if (parser.nextToken() != null) {
 				writer.createGenerator(out).use { generator -> copyValue(parser, generator, expand) }
@@ -65,8 +66,10 @@ object JsonFormatter {
 						inner.nextToken()
 						copyValue(inner, generator, expand = true)
 					}
+
 				token == JsonToken.VALUE_STRING && LoneSurrogates.hasLoneSurrogate(parser.string) ->
 					generator.writeRawValue(LoneSurrogates.escaped(parser.string))
+
 				else -> generator.copyCurrentEvent(parser)
 			}
 			if (token.isStructStart) depth++ else if (token.isStructEnd) depth--

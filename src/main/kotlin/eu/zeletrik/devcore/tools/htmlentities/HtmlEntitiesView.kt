@@ -28,7 +28,8 @@ class HtmlEntitiesView : TextToolView<TextArea>(Tool.HTML_ENTITIES, textArea("In
 	}
 
 	override fun render(text: String) {
-		output.value = if (mode.value == Mode.DECODE) HtmlEntities.decode(text) else HtmlEntities.encode(text, nonAscii.value)
+		output.value =
+			if (mode.value == Mode.DECODE) HtmlEntities.decode(text) else HtmlEntities.encode(text, nonAscii.value)
 	}
 
 	override fun clearOutputs() = output.clear()

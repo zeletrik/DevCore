@@ -119,6 +119,7 @@ object StringEscapes {
 					out.append((first + text.substring(position, end)).toInt(OCTAL).toChar())
 					position = end
 				}
+
 				Flavor.JAVASCRIPT -> if (first == '0' && text.getOrNull(position) !in '0'..'9') out.append(NUL) else invalid()
 				Flavor.JSON -> invalid()
 			}

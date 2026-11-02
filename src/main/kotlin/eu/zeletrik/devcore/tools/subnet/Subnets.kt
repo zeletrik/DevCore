@@ -30,9 +30,13 @@ object Subnets {
 			"/" in input -> {
 				val (address, prefix) = input.split("/", limit = 2)
 				val bits = prefix.toIntOrNull()
-				if (":" in address) Ipv6.describe(address, bits ?: throw IllegalArgumentException("Prefix must be 0–128"))
+				if (":" in address) Ipv6.describe(
+					address,
+					bits ?: throw IllegalArgumentException("Prefix must be 0–128")
+				)
 				else Ipv4.describe(Ipv4.parse(address), bits ?: throw IllegalArgumentException("Prefix must be 0–32"))
 			}
+
 			parts.size == 2 -> Ipv4.describe(Ipv4.parse(parts[0]), Ipv4.prefixOf(Ipv4.parse(parts[1])))
 			":" in input -> Ipv6.describe(input, IPV6_BITS)
 			else -> Ipv4.describe(Ipv4.parse(input), IPV4_BITS)

@@ -26,6 +26,7 @@ object LoremIpsum {
 			val opening = if (classicStart) openingWords else emptyList()
 			(opening + List(count) { vocabulary.random() }).take(count).joinToString(" ")
 		}
+
 		LoremUnit.SENTENCES -> sentences(count, classicStart).joinToString(" ")
 		LoremUnit.PARAGRAPHS -> List(count) { i ->
 			sentences(Random.nextInt(MIN_SENTENCES, MAX_SENTENCES + 1), classicStart && i == 0).joinToString(" ")

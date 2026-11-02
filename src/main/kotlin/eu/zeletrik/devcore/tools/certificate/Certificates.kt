@@ -127,7 +127,11 @@ object Certificates {
 			c.keyUsage?.let { bits ->
 				"Key usage: " + keyUsages.filterIndexed { i, _ -> bits.getOrElse(i) { false } }.joinToString(", ")
 			},
-			c.extendedKeyUsage?.let { oids -> "Extended key usage: " + oids.joinToString(", ") { extendedKeyUsages[it] ?: it } },
+			c.extendedKeyUsage?.let { oids ->
+				"Extended key usage: " + oids.joinToString(", ") {
+					extendedKeyUsages[it] ?: it
+				}
+			},
 			"Basic constraints: $constraints",
 			"SHA-256 fingerprint: ${fingerprint.formatHex(MessageDigest.getInstance("SHA-256").digest(c.encoded))}",
 			"SHA-1 fingerprint: ${fingerprint.formatHex(MessageDigest.getInstance("SHA-1").digest(c.encoded))}",
@@ -138,7 +142,10 @@ object Certificates {
 		val sans = request.getAttributes(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest)
 			.flatMap { attribute -> attribute.attrValues.toList() }
 			.flatMap { value ->
-				GeneralNames.fromExtensions(Extensions.getInstance(value), Extension.subjectAlternativeName)?.names.orEmpty()
+				GeneralNames.fromExtensions(
+					Extensions.getInstance(value),
+					Extension.subjectAlternativeName
+				)?.names.orEmpty()
 					.toList()
 			}
 		val signature = verify(request)
@@ -164,6 +171,7 @@ object Certificates {
 			X9ObjectIdentifiers.id_ecPublicKey,
 			EdECObjectIdentifiers.id_Ed25519,
 			EdECObjectIdentifiers.id_Ed448 -> true
+
 			else -> false
 		}
 		if (!supported) return NOT_CHECKED
@@ -199,7 +207,8 @@ object Certificates {
 
 	/** `SHA256withRSA` → `SHA-256 with RSA`. */
 	private fun signature(name: String) =
-		signatureName.matchEntire(name)?.let { "SHA-${it.groupValues[1]} with ${it.groupValues[2].uppercase()}" } ?: name
+		signatureName.matchEntire(name)?.let { "SHA-${it.groupValues[1]} with ${it.groupValues[2].uppercase()}" }
+			?: name
 }
 
 /** Public key descriptions: algorithm and size, or the curve. */
@@ -208,6 +217,7 @@ private object PublicKeys {
 	fun key(spki: SubjectPublicKeyInfo): String = when (spki.algorithm.algorithm) {
 		PKCSObjectIdentifiers.rsaEncryption ->
 			"RSA ${RSAPublicKey.getInstance(spki.parsePublicKey()).modulus.bitLength()} bits"
+
 		X9ObjectIdentifiers.id_ecPublicKey -> "EC " + curveName(spki.algorithm.parameters)
 		X9ObjectIdentifiers.id_dsa -> dsaBits(spki)?.let { "DSA $it bits" } ?: "DSA"
 		EdECObjectIdentifiers.id_Ed25519 -> "Ed25519"

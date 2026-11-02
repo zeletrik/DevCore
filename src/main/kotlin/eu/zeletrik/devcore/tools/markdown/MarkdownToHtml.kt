@@ -14,7 +14,8 @@ object MarkdownToHtml {
 	 * on text dense in ß or İ; at this size one bracket costs well under a second.
 	 */
 	private const val MAX_CHARS = 100_000
-	private val extensions = listOf(TablesExtension.create(), StrikethroughExtension.create(), AutolinkExtension.create())
+	private val extensions =
+		listOf(TablesExtension.create(), StrikethroughExtension.create(), AutolinkExtension.create())
 	private val parser = Parser.builder().extensions(extensions).build()
 	private val renderer = HtmlRenderer.builder().extensions(extensions).build()
 

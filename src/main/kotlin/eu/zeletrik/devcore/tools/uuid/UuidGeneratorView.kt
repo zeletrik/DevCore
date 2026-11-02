@@ -23,13 +23,13 @@ class UuidGeneratorView : GeneratorView(Tool.UUID) {
 	internal val hyphens = Checkbox("Hyphens", true).apply { addValueChangeListener { generate() } }
 	internal val version: RadioButtonGroup<IdVersion> =
 		choice("Version", IdVersion.entries, IdVersion.V4, IdVersion::label) {
-		// ULIDs are always uppercase and never hyphenated, so those options only apply to UUIDs.
-		val uuid = version.value != IdVersion.ULID
-		uppercase.isEnabled = uuid
-		hyphens.isEnabled = uuid
-		output.relabel(if (uuid) "UUIDs" else "ULIDs")
-		generate()
-	}
+			// ULIDs are always uppercase and never hyphenated, so those options only apply to UUIDs.
+			val uuid = version.value != IdVersion.ULID
+			uppercase.isEnabled = uuid
+			hyphens.isEnabled = uuid
+			output.relabel(if (uuid) "UUIDs" else "ULIDs")
+			generate()
+		}
 	internal val count = numberField("Count", 1..1000, 1).apply { addValueChangeListener { generate() } }
 	internal val output = OutputField("UUIDs")
 

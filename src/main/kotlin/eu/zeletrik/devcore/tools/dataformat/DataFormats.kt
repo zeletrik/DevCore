@@ -69,11 +69,13 @@ object DataFormats {
 			checkToml(tree, "")
 			bounded(toml.writer(), tree)
 		}
+
 		Format.PROPERTIES -> {
 			require(tree.isObject) { "Properties needs an object at the top level" }
 			checkProperties(tree, "", mutableSetOf())
 			escapeLeadingSpaces(bounded(props.writer(propsSchema), tree))
 		}
+
 		Format.CSV -> csvOf(tree)
 	}
 
@@ -86,8 +88,11 @@ object DataFormats {
 			node.isNull -> throw IllegalArgumentException("TOML has no null value (at '$path')")
 			node.isIntegralNumber && !node.canConvertToLong() ->
 				throw IllegalArgumentException("TOML integers are 64-bit (at '$path')")
+
 			node.isObject ->
-				node.properties().forEach { (name, child) -> checkToml(child, if (path.isEmpty()) name else "$path.$name") }
+				node.properties()
+					.forEach { (name, child) -> checkToml(child, if (path.isEmpty()) name else "$path.$name") }
+
 			node.isArray -> node.forEachIndexed { i, child -> checkToml(child, "$path[$i]") }
 		}
 	}
@@ -111,7 +116,8 @@ object DataFormats {
 	/** CSV read row by row: the header is checked for duplicates, and each row's error names its own line. */
 	private fun csvRows(text: String): JsonNode? {
 		if (text.isEmpty()) return null
-		val rows = csv.readerFor(Array<String>::class.java).with(CsvReadFeature.WRAP_AS_ARRAY).readValues<Array<String>>(text)
+		val rows =
+			csv.readerFor(Array<String>::class.java).with(CsvReadFeature.WRAP_AS_ARRAY).readValues<Array<String>>(text)
 		val header = rows.nextValue()
 		val seen = hashSetOf<String>()
 		val duplicate = header.firstOrNull { !seen.add(it) }
@@ -148,8 +154,10 @@ object DataFormats {
 				val kind = if (node.isArray) "array" else "object"
 				throw IllegalArgumentException("Properties can't hold the empty $kind at '$path'")
 			}
+
 			node.isObject -> node.properties()
 				.forEach { (name, child) -> checkProperties(child, if (path.isEmpty()) name else "$path.$name", keys) }
+
 			node.isArray -> node.forEachIndexed { i, child -> checkProperties(child, "$path[$i]", keys) }
 			else -> require(keys.add(path)) { "Key '$path' would be written twice" }
 		}
@@ -188,6 +196,7 @@ private object StrictTree {
 				require(!nonFinite.matches(parser.string)) { "Infinity and NaN aren't supported" }
 				nodes.numberNode(parser.decimalValue)
 			}
+
 			JsonToken.VALUE_TRUE -> nodes.booleanNode(true)
 			JsonToken.VALUE_FALSE -> nodes.booleanNode(false)
 			JsonToken.VALUE_NULL -> nodes.nullNode()
@@ -195,6 +204,7 @@ private object StrictTree {
 				is ByteArray -> nodes.stringNode(Base64.getEncoder().encodeToString(value))
 				else -> nodes.stringNode(value.toString())
 			}
+
 			else -> nodes.stringNode(parser.string)
 		}
 	}
@@ -226,6 +236,7 @@ private object StrictTree {
  * binary and base-60 ints, `_` separators, `.inf`/`.nan`, `~` and dates, so PyYAML and Ansible read them back as text.
  */
 private object YamlLookalikes : StringQuotingChecker.Default() {
+	private fun readResolve(): Any = YamlLookalikes
 	private val lookalikes = listOf(
 		"~",
 		"[-+]?0[bB][0-1_]+",
@@ -243,5 +254,5 @@ private object YamlLookalikes : StringQuotingChecker.Default() {
 	override fun needToQuoteValue(value: String) =
 		super.needToQuoteValue(value) || (
 			value.any { it.isDigit() || it == '~' || it == '.' } && lookalikes.any { it.matches(value) }
-		)
+			)
 }

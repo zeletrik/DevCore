@@ -9,7 +9,8 @@ object BasicAuth {
 
 	fun encode(username: String, password: String): String {
 		if (':' in username) throw FieldError("username", "A username can't contain ':'")
-		return "Authorization: Basic " + Base64.getEncoder().encodeToString("$username:$password".toByteArray(Charsets.UTF_8))
+		return "Authorization: Basic " + Base64.getEncoder()
+			.encodeToString("$username:$password".toByteArray(Charsets.UTF_8))
 	}
 
 	/** Accepts the full header, `Basic X` or just `X`; the password is everything after the first colon. */

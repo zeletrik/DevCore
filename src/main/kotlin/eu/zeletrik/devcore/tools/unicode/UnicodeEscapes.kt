@@ -86,6 +86,7 @@ object UnicodeEscapes {
 					append(c).append(text[i + 1])
 					i++
 				}
+
 				c.isSurrogate() -> append(REPLACEMENT)
 				else -> append(c)
 			}

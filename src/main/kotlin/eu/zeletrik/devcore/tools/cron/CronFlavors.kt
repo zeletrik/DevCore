@@ -73,6 +73,7 @@ object CronFlavors {
 				),
 				eitherDay = false,
 			)
+
 			CronFlavor.QUARTZ -> quartz(text)
 		}
 		ordinal.findAll(schedule.dayOfWeek).forEach {
@@ -113,7 +114,8 @@ object CronFlavors {
 			// Only a bare weekday digit moves down one: not an ordinal after `#`, not a step after `/`, not part of a
 			// longer number.
 			else ->
-				written.replace(Regex("^\\*/"), "1-7/").replace(Regex("(?<![#/0-9])[1-7]")) { (it.value.toInt() - 1).toString() }
+				written.replace(Regex("^\\*/"), "1-7/")
+					.replace(Regex("(?<![#/0-9])[1-7]")) { (it.value.toInt() - 1).toString() }
 		}
 		return CronSchedule(parts.take(DAY_OF_WEEK) + dayOfWeek, eitherDay = false, CronFlavor.QUARTZ, written)
 	}

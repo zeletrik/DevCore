@@ -84,7 +84,8 @@ object XmlFormatter {
 
 		private fun declaration(): Leaf? = reader.version?.let { version ->
 			val encoding = reader.characterEncodingScheme?.let { " encoding=\"$it\"" }.orEmpty()
-			val standalone = if (reader.standaloneSet()) " standalone=\"${if (reader.isStandalone) "yes" else "no"}\"" else ""
+			val standalone =
+				if (reader.standaloneSet()) " standalone=\"${if (reader.isStandalone) "yes" else "no"}\"" else ""
 			Leaf("<?xml version=\"$version\"$encoding$standalone?>", inline = false)
 		}
 
@@ -99,11 +100,15 @@ object XmlFormatter {
 		private fun handle(event: Int) {
 			when (event) {
 				DTD -> throw IllegalArgumentException("DTDs aren't supported")
-				START_ELEMENT -> Element(name(reader.prefix, reader.localName), attributes()).also { add(it); open.addLast(it) }
+				START_ELEMENT -> Element(
+					name(reader.prefix, reader.localName),
+					attributes()
+				).also { add(it); open.addLast(it) }
 				// Whitespace-only text is layout only between child elements; on its own (`<sep> </sep>`) it is the value.
 				END_ELEMENT -> open.removeLast().children.let { children ->
 					if (children.any { it is Element }) children.removeAll { it is Leaf && it.blank }
 				}
+
 				CDATA -> add(Leaf("<![CDATA[${reader.text}]]>", inline = true))
 				COMMENT -> add(Leaf("<!--${reader.text}-->", inline = false))
 				PROCESSING_INSTRUCTION -> {
@@ -136,12 +141,15 @@ object XmlFormatter {
 		when (node) {
 			is Leaf -> out.append(indent).append(node.markup)
 			is Element -> when {
-				node.children.isEmpty() -> out.append(indent).append('<').append(node.tag).append(node.attributes).append("/>")
+				node.children.isEmpty() -> out.append(indent).append('<').append(node.tag).append(node.attributes)
+					.append("/>")
+
 				node.children.all { it is Leaf && it.inline } -> {
 					out.append(indent).append('<').append(node.tag).append(node.attributes).append('>')
 					node.children.forEach { out.append((it as Leaf).markup) }
 					out.append("</").append(node.tag).append('>')
 				}
+
 				else -> {
 					val newline = if (pad == null) "" else "\n"
 					out.append(indent).append('<').append(node.tag).append(node.attributes).append('>').append(newline)

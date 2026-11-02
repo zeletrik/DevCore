@@ -130,7 +130,11 @@ object RegexTester {
 
 	/** `[start, end) "text"` for [group] (0 is the whole match), or `no match` when it did not take part. */
 	private fun span(matcher: Matcher, group: Int) =
-		if (matcher.start(group) < 0) "no match" else span(matcher.start(group), matcher.end(group), matcher.group(group))
+		if (matcher.start(group) < 0) "no match" else span(
+			matcher.start(group),
+			matcher.end(group),
+			matcher.group(group)
+		)
 
 	/** Long values are cut to [SHOWN] characters; the offsets still give their full extent. */
 	private fun span(start: Int, end: Int, value: String): String {

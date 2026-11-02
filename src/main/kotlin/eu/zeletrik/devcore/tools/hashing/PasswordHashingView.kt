@@ -32,7 +32,12 @@ enum class HashMode(val label: String) {
 class PasswordHashingView : TextToolView<PasswordField>(Tool.PASSWORD_HASHING, secretField("Password")) {
 	internal val mode = choice("Mode", HashMode.entries, HashMode.HASH, HashMode::label) { showFields(); recompute() }
 	internal val algorithm =
-		choice("Algorithm", HashAlgorithm.entries, HashAlgorithm.BCRYPT, HashAlgorithm::label) { showFields(); recompute() }
+		choice(
+			"Algorithm",
+			HashAlgorithm.entries,
+			HashAlgorithm.BCRYPT,
+			HashAlgorithm::label
+		) { showFields(); recompute() }
 	internal val cost = numberField(
 		"Cost",
 		PasswordHashes.bcryptCosts,

@@ -34,10 +34,13 @@ class QrCodeView : TextToolView<TextArea>(Tool.QR, textArea("Text or URL")) {
 	}
 	internal val ssid = field(textLine("SSID"), "ssid")
 	internal val password = field(textLine("Password"), "password")
-	internal val security = choice("Security", WifiSecurity.entries, WifiSecurity.WPA, WifiSecurity::label) { recompute() }
+	internal val security =
+		choice("Security", WifiSecurity.entries, WifiSecurity.WPA, WifiSecurity::label) { recompute() }
 	internal val hidden = Checkbox("Hidden network").apply { addValueChangeListener { recompute() } }
 	private val wifi = HorizontalLayout(ssid, password, security, hidden)
-		.apply { defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true; isVisible = false }
+		.apply {
+			defaultVerticalComponentAlignment = FlexComponent.Alignment.BASELINE; isWrap = true; isVisible = false
+		}
 	internal val code = CodeImageView("qr-code")
 
 	init {
@@ -52,7 +55,8 @@ class QrCodeView : TextToolView<TextArea>(Tool.QR, textArea("Text or URL")) {
 	override fun isEmpty() = if (wifiMode.value) ssid.value.isEmpty() else input.value.isEmpty()
 
 	override fun render(text: String) {
-		val content = if (wifiMode.value) QrCodes.wifi(ssid.value, password.value, security.value, hidden.value) else text
+		val content =
+			if (wifiMode.value) QrCodes.wifi(ssid.value, password.value, security.value, hidden.value) else text
 		val matrix = try {
 			QrCodes.encode(content, level.value)
 		} catch (e: IllegalArgumentException) {

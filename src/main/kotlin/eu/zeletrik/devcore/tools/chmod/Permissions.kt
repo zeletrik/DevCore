@@ -14,6 +14,7 @@ private const val STICKY = 0x200
 object Permissions {
 	const val INVALID = "Not a permission mode (use octal like 755 or symbolic like rwxr-xr-x)"
 	private val octal = Regex("0?([0-7]{3,4})")
+
 	// `ls -l` may add one marker: `.` (SELinux context), `@` (macOS extended attributes) or `+` (ACL).
 	private val symbolic = Regex("[-dlcbps]?([r-][w-][xsS-][r-][w-][xsS-][r-][w-][xtT-])[.@+]?")
 

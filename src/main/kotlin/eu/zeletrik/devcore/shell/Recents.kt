@@ -8,19 +8,19 @@ import com.vaadin.flow.spring.annotation.UIScope
 @UIScope
 class Recents(private val catalog: ToolCatalog) {
 	private val cookie = ToolCookie(COOKIE)
-	private val tools = cookie.read().orEmpty().filter(catalog::isVisible).take(LIMIT).toMutableList()
+	// final: kotlin-spring makes component members open, and an explicit backing field needs a final property.
+	final val list: List<Tool>
+		field = cookie.read().orEmpty().filter(catalog::isVisible).take(LIMIT).toMutableList()
 
 	init {
-		cookie.write(tools) // refreshes Max-Age on every visit and drops hidden ids
+		cookie.write(list) // refreshes Max-Age on every visit and drops hidden ids
 	}
 
-	val list: List<Tool> get() = tools
-
 	fun record(tool: Tool) {
-		tools.remove(tool)
-		tools.add(0, tool)
-		if (tools.size > LIMIT) tools.removeLast()
-		cookie.write(tools)
+		list.remove(tool)
+		list.add(0, tool)
+		if (list.size > LIMIT) list.removeLast()
+		cookie.write(list)
 	}
 
 	companion object {

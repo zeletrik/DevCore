@@ -39,10 +39,13 @@ object Barcodes {
 				text.firstOrNull { it.code !in ' '.code..'~'.code }
 					?.let { throw IllegalArgumentException("Code 128 takes only ASCII characters 32–126 (space to ~)") }
 			}
+
 			Symbology.CODE_39 -> input.also { text ->
 				require(text.length <= MAX_CHARS) { "Code 39 takes at most 80 characters" }
-				text.firstOrNull { it !in CODE_39_SET }?.let { throw IllegalArgumentException("Code 39 can't encode '$it'") }
+				text.firstOrNull { it !in CODE_39_SET }
+					?.let { throw IllegalArgumentException("Code 39 can't encode '$it'") }
 			}
+
 			else -> withCheckDigit(input, symbology)
 		}
 		return value to MultiFormatWriter().encode(value, symbology.format, 0, 1, quietZone)

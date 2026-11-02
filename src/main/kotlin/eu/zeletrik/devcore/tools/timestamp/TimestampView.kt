@@ -55,7 +55,8 @@ class TimestampView : TextToolView<TextArea>(Tool.TIMESTAMP, textArea("Timestamp
 		rfc1123.value = converted.rfc1123
 		sql.value = converted.sql
 		custom.value =
-			if (format.value.isBlank()) "" else optional(format) { Timestamps.custom(instant, zoneId, format.value) } ?: ""
+			if (format.value.isBlank()) ""
+			else optional(format) { Timestamps.custom(instant, zoneId, format.value) } ?: ""
 	}
 
 	override fun clearOutputs() =

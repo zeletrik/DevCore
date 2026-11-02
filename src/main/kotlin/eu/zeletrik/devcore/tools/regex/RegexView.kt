@@ -28,7 +28,8 @@ class RegexView : TextToolView<TextArea>(Tool.REGEX, textArea("Text")) {
 		addValueChangeListener { recompute() }
 	}
 	internal val replace = Checkbox("Replace").apply { addValueChangeListener { showReplace(); recompute() } }
-	internal val replacement = field(textLine("Replacement"), "replacement", optional = true).apply { isVisible = false }
+	internal val replacement =
+		field(textLine("Replacement"), "replacement", optional = true).apply { isVisible = false }
 	internal val matches = OutputField("Matches")
 	internal val replaced = OutputField("Replaced").apply { isVisible = false }
 

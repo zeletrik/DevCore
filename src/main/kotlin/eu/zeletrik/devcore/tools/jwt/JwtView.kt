@@ -52,7 +52,8 @@ class JwtView : TextToolView<TextArea>(Tool.JWT, textArea("JWT")) {
 	private fun showFields() {
 		val decoding = mode.value == Mode.DECODE
 		input.label = if (decoding) "JWT" else "Payload"
-		secret.helperText = if (decoding) "Optional: checks HS256, HS384 and HS512 signatures" else "Used to sign the token"
+		secret.helperText =
+			if (decoding) "Optional: checks HS256, HS384 and HS512 signatures" else "Used to sign the token"
 		algorithm.isVisible = !decoding
 		token.isVisible = !decoding
 		listOf(status, times, header, payload, signature).forEach { it.isVisible = decoding }

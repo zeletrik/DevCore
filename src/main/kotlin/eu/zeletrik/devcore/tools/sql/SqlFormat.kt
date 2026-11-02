@@ -25,7 +25,8 @@ object SqlFormat {
 		// NOTE: the library's cost grows faster than its input (and with nesting), so both are capped before it runs.
 		require(sql.length <= MAX_CHARS) { "Input is too large for the SQL Formatter (max 100,000 characters)" }
 		require(nesting(sql) <= MAX_DEPTH) { "Parentheses nested too deeply (max 100)" }
-		val config = FormatConfig.builder().indent(" ".repeat(indent)).uppercase(uppercase).linesBetweenQueries(2).build()
+		val config =
+			FormatConfig.builder().indent(" ".repeat(indent)).uppercase(uppercase).linesBetweenQueries(2).build()
 		val shield = CAST !in sql
 		val formatted = SqlFormatter.of(dialect.dialect).format(if (shield) sql.replace("::", CAST) else sql, config)
 		return if (shield) formatted.replace(CAST, "::") else formatted

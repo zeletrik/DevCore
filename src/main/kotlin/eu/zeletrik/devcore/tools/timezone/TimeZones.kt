@@ -20,16 +20,18 @@ object TimeZones {
 		val value = text.trim()
 		val local = try {
 			LocalDateTime.parse(value.replaceFirst(' ', 'T'))
-		} catch (e: DateTimeParseException) {
+		} catch (_: DateTimeParseException) {
 			throw IllegalArgumentException("Use an ISO-8601 local date-time, e.g. 2026-10-29T14:30 or 2026-10-29 14:30")
 		}
 		// Seconds are echoed only when the input wrote them, even as :00.
-		val time = DateTimeFormatter.ofPattern(if (withSeconds.containsMatchIn(value)) "HH:mm:ss" else "HH:mm", Locale.ROOT)
+		val time =
+			DateTimeFormatter.ofPattern(if (withSeconds.containsMatchIn(value)) "HH:mm:ss" else "HH:mm", Locale.ROOT)
 		// A gap moves forward by its length; an overlap takes the earlier offset.
 		val start = ZonedDateTime.ofLocal(local, source, null)
 		val gap = source.rules.getValidOffsets(local).isEmpty()
 		val note =
 			if (gap) " (adjusted: ${local.format(time)} doesn't exist in ${source.id} on ${local.toLocalDate()})" else ""
+
 		fun line(at: ZonedDateTime) = "${at.zone.id}  ${at.toLocalDate()} ${at.format(time)}  ${at.format(offset)}"
 		val others = targets.map { zone ->
 			val there = start.withZoneSameInstant(zone)

@@ -19,7 +19,8 @@ import eu.zeletrik.devcore.tools.codes.CodeImages
 @SpringComponent
 @UIScope
 class BarcodeView : TextToolView<TextField>(Tool.BARCODE, textLine("Value")) {
-	internal val symbology = enumSelect("Format", Symbology.entries, Symbology.CODE_128, Symbology::label) { recompute() }
+	internal val symbology =
+		enumSelect("Format", Symbology.entries, Symbology.CODE_128, Symbology::label) { recompute() }
 	internal val encoded = OutputField("Encoded value")
 	internal val code = CodeImageView("barcode")
 
