@@ -37,6 +37,9 @@ These hold for every tool and every change:
 
 ## Adding a tool
 
+Coding agents: [`AGENTS.md`](AGENTS.md) and the `add-tool` skill in `.claude/skills/` cover the same steps in more
+detail.
+
 1. **Register it.** Add an entry to the `Tool` enum in `shell/Tool.kt` with:
    - a title;
    - a description that starts with a verb and has no final period;
@@ -52,7 +55,9 @@ These hold for every tool and every change:
    - The id is lowercase and hyphenated, and it never changes after a release: it is the tool's URL and its name in
      cookies and configuration.
    - For modes, override `applyMode` so `?mode=` works.
-4. **Test the view** with a browserless test (`SpringBrowserlessTest`), as the existing tools do.
+4. **Update the shared tests.** Add the id to the released ids in `ArchitectureTest`. If the tool reads `?input=` or
+   has modes, add it to the lists at the top of `ToolsSmokeTest`. The view gets a test of its own there only if it
+   has behavior of its own, and then one happy path.
 5. **Document it:**
    - add a row to the Tools table in `README.md`;
    - update the tool count in `README.md`, `Project.DESCRIPTION` and the image description label in
