@@ -9,6 +9,9 @@ import java.util.regex.PatternSyntaxException
 /** Matching checks the clock once every 1024 character reads. */
 private const val CLOCK_CHECK_MASK = 0x3FF
 
+/** The most iterations a pattern's counted repetitions may multiply to; about 40 ms of work at worst. */
+private const val MAX_REPETITIONS = 10_000_000L
+
 /** The `java.util.regex` flags offered; ignore case is Unicode-aware. */
 enum class RegexFlag(val label: String, val bits: Int) {
 	IGNORE_CASE("Ignore case", Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE),
@@ -25,7 +28,9 @@ object RegexTester {
 	private const val LISTED = 1000
 	private const val SHOWN = 200
 	const val STOPPED = "Stopped after 1 second: the pattern backtracks too much on this text"
+	const val TOO_MANY_REPETITIONS = "Repetition counts too large: the {n} counts may multiply to at most 10,000,000"
 	private const val BUDGET_NANOS = 1_000_000_000L
+	private val repetition = Regex("""\{(\d+)(?:,(\d*))?}""")
 
 	/**
 	 * Thrown when evaluation runs past its deadline. Not an IllegalArgumentException on purpose: the view reports it on
@@ -37,10 +42,46 @@ object RegexTester {
 	/** One budget for a whole evaluation: the view passes the same deadline to [list] and [replace]. */
 	fun deadline() = System.nanoTime() + BUDGET_NANOS
 
-	fun compile(pattern: String, flags: Set<RegexFlag>): Pattern = try {
-		Pattern.compile(pattern, flags.fold(0) { bits, flag -> bits or flag.bits })
-	} catch (e: PatternSyntaxException) {
-		throw FieldError("pattern", "${e.description} near index ${e.index}", e)
+	fun compile(pattern: String, flags: Set<RegexFlag>): Pattern {
+		checkRepetitions(pattern)
+		return try {
+			Pattern.compile(pattern, flags.fold(0) { bits, flag -> bits or flag.bits })
+		} catch (e: PatternSyntaxException) {
+			throw FieldError("pattern", "${e.description} near index ${e.index}", e)
+		}
+	}
+
+	/**
+	 * The deadline is checked as the text is read, but a counted repetition of something that can match empty, such as
+	 * `(?:(?:){2}){1000000000}`, loops without reading: it would spin forever. `*` and `+` stop on an empty iteration,
+	 * so only `{n}`, `{n,}` and `{n,m}` are counted, and the product of all of them bounds any nesting. Text in
+	 * classes, quotes and comments counts too, which only makes the check stricter.
+	 */
+	private fun checkRepetitions(pattern: String) {
+		var product = 1L
+		var i = 0
+		while (i < pattern.length) {
+			when (pattern[i]) {
+				'\\' -> i = escapeEnd(pattern, i)
+				'{' -> repetition.matchAt(pattern, i)?.let { match ->
+					val (min, max) = match.destructured
+					val bound = (max.ifEmpty { min }).toLongOrNull()?.coerceAtLeast(1) ?: Long.MAX_VALUE
+					if (bound > MAX_REPETITIONS / product) throw FieldError("pattern", TOO_MANY_REPETITIONS)
+					product *= bound
+					i = match.range.last
+				}
+			}
+			i++
+		}
+	}
+
+	/** The last index of the escape at [start]: `\x{…}`, `\p{…}`, `\P{…}` and `\N{…}` run to their brace. */
+	private fun escapeEnd(pattern: String, start: Int): Int {
+		val braced = pattern.getOrNull(start + 1)?.let { it in "xpPN" } == true && pattern.getOrNull(start + 2) == '{'
+		if (!braced) return start + 1
+		// A newline also ends it: in comments mode it ends a `#` comment the escape may have been written in.
+		val end = pattern.indexOfAny(charArrayOf('}', '\n'), start + 2)
+		return if (end < 0) pattern.length else end
 	}
 
 	/** `N matches`, then `#k [start, end) "text"` per match with one indented line per group, at most [LISTED]. */

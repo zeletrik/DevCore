@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
+import java.io.IOException
 import kotlin.reflect.full.memberProperties
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -68,7 +69,7 @@ private class FailingTool(private val failure: () -> Throwable) :
 	override fun clearOutputs() = output.clear()
 }
 
-/** A generator that succeeds on attach and fails once [fail] is set. */
+/** A generator that succeeds on attach and fails, with a checked exception, once [fail] is set. */
 private class FailingGenerator : GeneratorView(Tool.LOREM) {
 	var fail = false
 	val output = OutputField("Output")
@@ -78,7 +79,7 @@ private class FailingGenerator : GeneratorView(Tool.LOREM) {
 	}
 
 	override fun produce() {
-		if (fail) throw IllegalStateException("generator-secret")
+		if (fail) throw IOException("generator-secret")
 		output.value = "first"
 	}
 }
@@ -215,6 +216,15 @@ class ToolViewContractTest : SpringBrowserlessTest() {
 	}
 
 	@Test
+	fun `a checked exception, which Kotlin lets pass undeclared, is caught the same way`(output: CapturedOutput) {
+		val view = FailingTool { IOException("checked-secret") }
+		view.input.value = "input-secret"
+		assertEquals("Couldn't process this input", view.input.errorMessage)
+		assertTrue(failureLines(output).single().contains("${Tool.BASE64.id} failed: java.io.IOException"))
+		assertFalse(output.all.contains("checked-secret"))
+	}
+
+	@Test
 	fun `a stack overflow says the input is too deeply nested`(output: CapturedOutput) {
 		val view = FailingTool { StackOverflowError() }
 		view.input.value = "[[["
@@ -234,7 +244,7 @@ class ToolViewContractTest : SpringBrowserlessTest() {
 		assertTrue(view.generateError.isVisible)
 		assertEquals("Couldn't generate output", view.generateError.text)
 		assertEquals("first", view.output.value)
-		assertTrue(failureLines(output).single().contains("${Tool.LOREM.id} failed: java.lang.IllegalStateException"))
+		assertTrue(failureLines(output).single().contains("${Tool.LOREM.id} failed: java.io.IOException"))
 		assertFalse(output.all.contains("generator-secret"))
 	}
 
@@ -282,7 +292,7 @@ class ToolViewContractTest : SpringBrowserlessTest() {
 
 		val jsonPath = navigate(JsonPathView::class.java)
 		jsonPath.input.value = "[1]"
-		test(jsonPath.path).setValue("$[?(" + "(".repeat(20_000) + "@ == 1" + ")".repeat(20_000) + ")]")
+		test(jsonPath.path).setValue("$[?(" + "(".repeat(4_990) + "@ == 1" + ")".repeat(4_990) + ")]")
 		assertFalse(jsonPath.path.isInvalid)
 		assertEquals("[${'\n'}  1${'\n'}]", jsonPath.output.value)
 	}

@@ -30,13 +30,17 @@ enum class DataUnit(val label: String, base: Int, power: Int, bytes: Boolean) {
 }
 
 private const val MAX_DIGITS = 30
+private const val MAX_CHARS = 100
 private const val DECIMALS = 6
 
 /** One value in every [DataUnit], exact to six decimals. */
 object DataSizes {
 	/** One `<value> <unit>` line per unit: exact, rounded half-even to at most 6 decimals, plain notation. */
 	fun convert(text: String, unit: DataUnit): String {
-		val value = text.trim().toBigDecimalOrNull()?.takeIf { it.signum() >= 0 }
+		val trimmed = text.trim()
+		// BigDecimal parsing takes quadratic time in the length, so overlong text stops before it.
+		require(trimmed.length <= MAX_CHARS) { "Value out of range" }
+		val value = trimmed.toBigDecimalOrNull()?.takeIf { it.signum() >= 0 }
 			?: throw IllegalArgumentException("Enter a number of 0 or more")
 		// BigDecimal would build 10^exponent in full, so absurd magnitudes and precisions stop here.
 		require(value.precision() - value.scale() <= MAX_DIGITS && value.scale() <= MAX_DIGITS) { "Value out of range" }

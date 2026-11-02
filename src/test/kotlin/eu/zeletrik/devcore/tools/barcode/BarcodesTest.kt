@@ -41,6 +41,10 @@ class BarcodesTest {
 		assertEquals("EAN-8 needs 7 or 8 digits", error("123456", Symbology.EAN_8))
 		assertEquals("UPC-A needs 11 or 12 digits", error("1234567890123", Symbology.UPC_A))
 		assertEquals("Code 39 can't encode 'x'", error("AxB", Symbology.CODE_39))
+		assertEquals("X".repeat(80), value("X".repeat(80), Symbology.CODE_39))
+		assertEquals("Code 39 takes at most 80 characters", error("X".repeat(81), Symbology.CODE_39))
+		assertEquals("x".repeat(80), value("x".repeat(80), Symbology.CODE_128))
+		assertEquals("Code 128 takes at most 80 characters", error("x".repeat(81), Symbology.CODE_128))
 		listOf("é", "a\tb").forEach {
 			assertEquals("Code 128 takes only ASCII characters 32–126 (space to ~)", error(it, Symbology.CODE_128), it)
 		}

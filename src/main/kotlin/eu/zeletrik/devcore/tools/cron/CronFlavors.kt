@@ -23,6 +23,9 @@ private const val UNIX_FIELDS = 5
 /** A month has at most five of any weekday, so `#` ordinals run 1–5. */
 private const val MAX_ORDINAL = 5
 
+/** Far beyond any real schedule; Spring upper-cases fields while parsing, which is slow on long text dense in ß. */
+private const val MAX_LENGTH = 1000
+
 /**
  * An expression in Spring's six-field syntax, plus the classic cron "either day matches" rule when it applies.
  * [writtenDayOfWeek] keeps the user's own day-of-week field (Quartz counts 1–7 from Sunday) for the description.
@@ -58,6 +61,7 @@ object CronFlavors {
 	 */
 	fun parse(expression: String, flavor: CronFlavor): CronSchedule {
 		val text = expression.trim()
+		require(text.length <= MAX_LENGTH) { "Expression is too long (max 1,000 characters)" }
 		require(text != "@reboot") { "@reboot has no schedule" }
 		val schedule = when (flavor) {
 			CronFlavor.UNIX -> unix(text)

@@ -14,10 +14,12 @@ import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
-/** The shell's own logic: the catalog, the cookies and the release notes, without a UI. */
+/** The shell's own logic: the catalog, the cookies, the release notes and deep work, without a UI. */
 @ExtendWith(OutputCaptureExtension::class)
 class ShellTest {
 	private fun catalog(hidden: List<String> = emptyList(), defaults: List<String> = emptyList()) =
@@ -93,5 +95,12 @@ class ShellTest {
 		assertTrue("rel=\"noopener noreferrer\"" in html, html)
 		assertFalse("<script" in html, html)
 		assertEquals("No release notes in this build", (AboutView.releaseNotes(null) as Paragraph).text)
+	}
+
+	@Test
+	fun `deep work answers with its result, or gives up at the time limit with a readable message`() {
+		assertEquals(42, DeepWork.run { 42 })
+		val tooSlow = assertFailsWith<DeepWork.TooSlow> { DeepWork.run(50.milliseconds) { Thread.sleep(5_000) } }
+		assertEquals("Stopped after 50ms: this input takes too long", tooSlow.message)
 	}
 }

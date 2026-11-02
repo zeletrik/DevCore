@@ -31,7 +31,7 @@ object NumberBases {
 		var digits = text.trim().replace(Regex("[_\\s]"), "")
 		val negative = digits.startsWith("-")
 		digits = digits.removePrefix("-").removePrefix("+")
-		val prefix = prefixes.entries.firstOrNull { digits.lowercase().startsWith(it.key) }
+		val prefix = prefixes.entries.firstOrNull { digits.startsWith(it.key, ignoreCase = true) }
 		val radix = base.radix ?: prefix?.value ?: DECIMAL_RADIX
 		if (prefix != null && prefix.value == radix) digits = digits.drop(prefix.key.length)
 		require(digits.isNotEmpty()) { "Enter some digits" }

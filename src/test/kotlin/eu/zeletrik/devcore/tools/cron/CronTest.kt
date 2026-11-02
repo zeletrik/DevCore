@@ -204,6 +204,7 @@ class CronTest {
 			error("0 0 12 * *", CronFlavor.QUARTZ),
 		)
 		assertEquals("@reboot has no schedule", error("@reboot"))
+		assertEquals("Expression is too long (max 1,000 characters)", error("0 0 * * " + "ß".repeat(993)))
 	}
 
 	@Test

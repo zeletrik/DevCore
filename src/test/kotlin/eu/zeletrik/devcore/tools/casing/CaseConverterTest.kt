@@ -1,8 +1,10 @@
 package eu.zeletrik.devcore.tools.casing
 
 import java.util.Locale
+import kotlin.system.measureNanoTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class CaseConverterTest {
 	private fun convert(text: String, case: Case) = CaseConverter.convert(text, case)
@@ -49,5 +51,12 @@ class CaseConverterTest {
 		assertEquals("cafe\u0301_au_lait", convert("cafe\u0301 au lait", Case.SNAKE))
 		val hindi = "नमस्ते दुनिया"
 		assertEquals(hindi.replace(' ', '-'), convert(hindi, Case.KEBAB))
+	}
+
+	@Test
+	fun `every case of text dense in expanding letters converts in linear time`() {
+		val dotted = "İ".repeat(200_000)
+		assertTrue(measureNanoTime { Case.entries.forEach { convert(dotted, it) } } < 2_000_000_000)
+		assertEquals("STRASSE", convert("straße", Case.UPPER))
 	}
 }

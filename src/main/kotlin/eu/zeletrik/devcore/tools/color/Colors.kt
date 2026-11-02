@@ -96,9 +96,13 @@ object Colors {
 	private val hexForm = Regex("#?([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})")
 	private val function = Regex("(rgba?|hsla?|hsv|cmyk)\\((.*)\\)", RegexOption.IGNORE_CASE)
 
+	private val longestName = named.keys.maxOf { it.length }
+
 	fun parse(text: String): Rgba {
 		val value = text.trim()
-		val hex = hexForm.matchEntire(named[value.lowercase()] ?: value)
+		// Only name-sized text is lowercased: the JDK's case mapping is quadratic on long text dense in İ.
+		val name = value.takeIf { it.length <= longestName }?.lowercase()
+		val hex = hexForm.matchEntire(name?.let(named::get) ?: value)
 		return if (hex != null) fromHex(hex.groupValues[1]) else fromFunction(value)
 	}
 

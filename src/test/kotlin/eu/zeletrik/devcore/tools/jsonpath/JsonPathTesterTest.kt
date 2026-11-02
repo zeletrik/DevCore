@@ -61,4 +61,20 @@ class JsonPathTesterTest {
 		assertTrue(message.startsWith("Invalid JSON at line 1, column"), message)
 		assertTrue(message.contains("\"a\""), message)
 	}
+
+	@Test
+	fun `one deep scan per path, paths up to 10,000 characters, and a bounded number of matches`() {
+		fun refused(json: String, path: String) = pathError(json, path).let { it.field to it.message }
+		val nested = "{\"a\":".repeat(100) + "1" + "}".repeat(100)
+		assertEquals("path" to "Only one deep scan (..) per path is supported", refused(nested, "$..*..*..*..*"))
+		assertEquals(100, JsonPathTester.evaluate(nested, "$..*").lines().count { it.startsWith("  {") || it == "  1" })
+		assertEquals("[]", flat("{}", "$['" + "a".repeat(9_995) + "']"))
+		assertEquals("path" to "Path is too long (max 10,000 characters)", refused("{}", "$['" + "a".repeat(9_996) + "']"))
+		val tooMany = "path" to "Too many matches to show; narrow the path"
+		assertEquals(100_000, flat("[" + "1,".repeat(99_999) + "1]", "$[*]").count { it == '1' })
+		assertEquals(tooMany, refused("[" + "1,".repeat(100_000) + "1]", "$[*]"))
+		// Jayway keeps a path per match: 100 matches under 1,000-character keys spell out more than 5,000,000.
+		val key = "k".repeat(1_000)
+		assertEquals(tooMany, refused("{\"$key\":".repeat(100) + "1" + "}".repeat(100), "$..*"))
+	}
 }

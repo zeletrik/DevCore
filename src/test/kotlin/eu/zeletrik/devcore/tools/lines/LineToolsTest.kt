@@ -65,4 +65,11 @@ class LineToolsTest {
 		val lines = (1..10).joinToString("\n") { it.toString().repeat(99_999).take(99_999) }
 		assertTrue(measureNanoTime { LineTools.apply(lines, LineOptions(order = Order.NATURAL)) } < 1_000_000_000)
 	}
+
+	@Test
+	fun `ignore case stays linear on long lines whose case mapping expands`() {
+		val text = "İ".repeat(500_000) + "\n" + "ß".repeat(500_000)
+		val options = LineOptions(ignoreCase = true, order = Order.ASCENDING)
+		assertTrue(measureNanoTime { LineTools.apply(text, options) } < 2_000_000_000)
+	}
 }

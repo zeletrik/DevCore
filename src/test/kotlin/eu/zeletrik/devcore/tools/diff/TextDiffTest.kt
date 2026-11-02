@@ -78,4 +78,11 @@ class TextDiffTest {
 		assertEquals("Too many lines to compare (max 10,000)", e.message)
 		assertFailsWith<IllegalArgumentException> { diff(lines(10_001), "x") }
 	}
+
+	@Test
+	fun `ignore case stays linear on a long line whose case mapping expands`() {
+		val line = "İ".repeat(1_000_000)
+		val elapsed = measureNanoTime { assertEquals("No differences", diff(line, line, ignoreCase = true).status) }
+		assertTrue(elapsed < 2_000_000_000)
+	}
 }

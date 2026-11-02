@@ -14,6 +14,10 @@ spring:
 server:
   # Honor X-Forwarded-* from a reverse proxy, including X-Forwarded-Prefix for path-stripping setups.
   forward-headers-strategy: framework
+  tomcat:
+    # A deep link pasted with raw JSON or brackets would otherwise get a bare 400, and the full link, input included,
+    # would land in the log.
+    relaxed-query-chars: ['{', '}', '[', ']', '|', '^', '`', '<', '>', '"', '\']
 management:
   endpoints:
     web:

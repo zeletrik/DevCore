@@ -29,9 +29,9 @@ abstract class GeneratorView(tool: Tool) : ToolView(tool) {
 		generated = true
 	}
 
-	/** The safety net: anything but a JVM error is logged without the input and reported next to the button. */
+	/** The safety net: anything but a JVM error (checked exceptions included) is logged without the input and reported. */
 	private fun failed(error: Throwable) {
-		if (error !is StackOverflowError && error !is RuntimeException) throw error
+		if (error !is StackOverflowError && error !is Exception) throw error
 		logFailure(tool, error)
 		generateError.isVisible = true
 	}

@@ -46,5 +46,7 @@ class NumberBasesTest {
 		listOf(9_999, 10_000).forEach { assertEquals(it, convert("-0x_" + "1".repeat(it)).hex.length - 1) }
 		assertTrue(measureNanoTime { convert("9".repeat(10_000), InputBase.DECIMAL) } < 1_000_000_000)
 		assertEquals("Number too long (max 10,000 digits)", error("1".repeat(10_001), InputBase.DECIMAL))
+		assertTrue(measureNanoTime { error("İ".repeat(1_000_000), InputBase.AUTO) } < 1_000_000_000)
+		assertEquals("255", convert("0XFF").decimal)
 	}
 }

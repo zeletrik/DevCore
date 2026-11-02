@@ -123,4 +123,22 @@ class RegexTesterTest {
 		assertFailsWith<RegexTester.Timeout> { list("(.*,){15}x", "a,".repeat(30)) }
 		assertTrue(System.nanoTime() - started < 3_000_000_000L)
 	}
+
+	@Test
+	fun `counted repetitions may multiply to at most ten million, so a loop that reads nothing can't spin`() {
+		// The last one hides nothing: a newline ends the comment that the unclosed \p{ is in.
+		val refused = listOf(
+			"(?:(?:){2}){1000000000}", "a{10000}b{1001}", "a{1,99999999999999999999}", "(?x)#\\p{\n(?:(?:){9}){9999999}",
+		)
+		refused.forEach { pattern ->
+			val error = assertFailsWith<FieldError> { RegexTester.compile(pattern, emptySet()) }
+			assertEquals("pattern" to RegexTester.TOO_MANY_REPETITIONS, error.field to error.message, pattern)
+		}
+		val started = System.nanoTime()
+		assertEquals("2 matches", list("(?:(?:){10000}){1000}", "a").lines().first())
+		assertTrue(System.nanoTime() - started < 1_000_000_000L)
+		// Escaped braces, code points and properties aren't counts.
+		assertEquals("1 match", list("\\{100000000}", "{100000000}").lines().first())
+		assertEquals("1 match", list("\\x{10000}{1000}\\p{L}{3}", "𐀀".repeat(1000) + "abc").lines().first())
+	}
 }

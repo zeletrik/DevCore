@@ -6,7 +6,7 @@ import com.github.difflib.patch.Chunk
 import com.github.difflib.patch.DeltaType
 import com.github.difflib.patch.Patch
 import eu.zeletrik.devcore.tools.FieldError
-import java.util.Locale
+import eu.zeletrik.devcore.tools.lowercaseLinear
 
 /** A unified diff and the one-line summary shown above it: `No differences` or `+added −removed lines`. */
 data class Diff(val unified: String, val status: String)
@@ -25,7 +25,7 @@ object TextDiff {
 		val b = lines(changed) ?: throw FieldError("changed", TOO_MANY)
 		fun normal(line: String): String {
 			val spaced = if (ignoreWhitespace) line.trim().replace(whitespace, " ") else line
-			return if (ignoreCase) spaced.lowercase(Locale.ROOT) else spaced
+			return if (ignoreCase) spaced.lowercaseLinear() else spaced
 		}
 		// Each line is normalized once and the normalized lists are diffed; the hunks then show the lines as written.
 		val patch = if (ignoreCase || ignoreWhitespace) {

@@ -114,7 +114,8 @@ abstract class TextToolView<F : TextFieldBase<F, String>>(tool: Tool, internal v
 
 	/**
 	 * Invalid input marks its field. Anything else is the safety net: it is logged without the input, and the input shows
-	 * a generic message.
+	 * a generic message. Checked exceptions count too: Kotlin lets Java's (an unparsable certificate field) pass
+	 * undeclared. Only JVM errors other than a stack overflow propagate.
 	 */
 	private fun failed(e: Throwable) {
 		when (e) {
@@ -124,7 +125,7 @@ abstract class TextToolView<F : TextFieldBase<F, String>>(tool: Tool, internal v
 				logFailure(tool, e)
 				fail(input, TOO_DEEP)
 			}
-			is RuntimeException -> {
+			is Exception -> {
 				logFailure(tool, e)
 				fail(input, UNEXPECTED)
 			}

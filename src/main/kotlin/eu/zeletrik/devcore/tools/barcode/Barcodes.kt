@@ -21,6 +21,12 @@ object Barcodes {
 	private const val GS1_MODULUS = 10
 
 	/**
+	 * Code 128 and Code 39 have no length limit of their own, but scanners rarely read past this; ZXing caps Code 39
+	 * here, and its Code 128 checksum overflows past about 7,000 characters, where the image also runs to megapixels.
+	 */
+	private const val MAX_CHARS = 80
+
+	/**
 	 * ZXing splits the margin between both sides: 11 modules each, enough for every symbology here (EAN-13's left side).
 	 */
 	private val quietZone = mapOf(EncodeHintType.MARGIN to 22)
@@ -29,10 +35,12 @@ object Barcodes {
 	fun encode(input: String, symbology: Symbology): Pair<String, BitMatrix> {
 		val value = when (symbology) {
 			Symbology.CODE_128 -> input.also { text ->
+				require(text.length <= MAX_CHARS) { "Code 128 takes at most 80 characters" }
 				text.firstOrNull { it.code !in ' '.code..'~'.code }
 					?.let { throw IllegalArgumentException("Code 128 takes only ASCII characters 32–126 (space to ~)") }
 			}
 			Symbology.CODE_39 -> input.also { text ->
+				require(text.length <= MAX_CHARS) { "Code 39 takes at most 80 characters" }
 				text.firstOrNull { it !in CODE_39_SET }?.let { throw IllegalArgumentException("Code 39 can't encode '$it'") }
 			}
 			else -> withCheckDigit(input, symbology)

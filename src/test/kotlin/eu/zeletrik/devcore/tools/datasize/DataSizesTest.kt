@@ -50,7 +50,7 @@ class DataSizesTest {
 		listOf("1e29", "999999999999999999999999999999", "0.123456789012345678901234567890").forEach {
 			assertEquals(DataUnit.entries.size, lines(it, DataUnit.MB).size, it)
 		}
-		listOf("1e30", "0.1234567890123456789012345678901", "1e999999999", "1e-30000000").forEach {
+		listOf("1e30", "0.1234567890123456789012345678901", "1e999999999", "1e-30000000", "1".repeat(999_999)).forEach {
 			assertTrue(measureNanoTime { assertEquals("Value out of range", error(it), it) } < 1_000_000_000, it)
 		}
 	}

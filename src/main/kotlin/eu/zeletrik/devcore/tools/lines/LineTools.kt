@@ -1,5 +1,6 @@
 package eu.zeletrik.devcore.tools.lines
 
+import eu.zeletrik.devcore.tools.lowercaseLinear
 import java.util.Arrays
 import kotlin.random.Random
 
@@ -21,20 +22,24 @@ data class LineOptions(
 object LineTools {
 	fun apply(text: String, options: LineOptions, random: Random = Random): String {
 		var lines = text.removeSuffix("\n").split("\n")
-		val key: (String) -> String = if (options.ignoreCase) { line -> line.lowercase() } else { line -> line }
+		val key: (String) -> String = if (options.ignoreCase) { line -> line.lowercaseLinear() } else { line -> line }
 		if (options.trim) lines = lines.map { it.trim() }
 		if (options.removeEmpty) lines = lines.filter { it.isNotEmpty() }
 		if (options.removeDuplicates) lines = lines.distinctBy(key)
 		lines = when (options.order) {
 			Order.AS_IS -> lines
-			Order.ASCENDING -> lines.sortedWith { a, b -> byCodePoint(key(a), key(b)) }
-			Order.DESCENDING -> lines.sortedWith { a, b -> byCodePoint(key(b), key(a)) }
-			Order.NATURAL -> lines.sortedWith { a, b -> natural(key(a), key(b)) }
+			Order.ASCENDING -> lines.sortedByKey(key, ::byCodePoint)
+			Order.DESCENDING -> lines.sortedByKey(key) { a, b -> byCodePoint(b, a) }
+			Order.NATURAL -> lines.sortedByKey(key, ::natural)
 			Order.REVERSE -> lines.reversed()
 			Order.SHUFFLE -> lines.shuffled(random)
 		}
 		return lines.joinToString("\n")
 	}
+
+	/** Sorts by [key], computed once per line rather than on every comparison. */
+	private fun List<String>.sortedByKey(key: (String) -> String, order: (String, String) -> Int) =
+		map { it to key(it) }.sortedWith { a, b -> order(a.second, b.second) }.map { it.first }
 
 	private fun byCodePoint(a: String, b: String) = Arrays.compare(a.codePoints().toArray(), b.codePoints().toArray())
 

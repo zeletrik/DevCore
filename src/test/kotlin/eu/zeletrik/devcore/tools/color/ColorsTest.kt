@@ -1,8 +1,10 @@
 package eu.zeletrik.devcore.tools.color
 
+import kotlin.system.measureNanoTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class ColorsTest {
 	private fun notations(text: String) = Colors.notations(Colors.parse(text))
@@ -78,5 +80,10 @@ class ColorsTest {
 	fun `green and blue sectors`() {
 		assertEquals("hsl(120, 100%, 50%)", notations("#00ff00").hsl)
 		assertEquals("hsl(240, 100%, 50%)", notations("#0000ff").hsl)
+	}
+
+	@Test
+	fun `a long input is invalid at once`() {
+		assertTrue(measureNanoTime { assertEquals(Colors.INVALID, invalid("İ".repeat(1_000_000))) } < 1_000_000_000)
 	}
 }
