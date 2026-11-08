@@ -14,10 +14,12 @@ import eu.zeletrik.devcore.tools.cron.CronView
 import eu.zeletrik.devcore.tools.dataformat.DataFormatView
 import eu.zeletrik.devcore.tools.datasize.DataSizeView
 import eu.zeletrik.devcore.tools.diff.TextDiffView
+import eu.zeletrik.devcore.tools.dockercompose.DockerComposeView
 import eu.zeletrik.devcore.tools.hash.HashGeneratorView
 import eu.zeletrik.devcore.tools.hashing.PasswordHashingView
 import eu.zeletrik.devcore.tools.htmlentities.HtmlEntitiesView
 import eu.zeletrik.devcore.tools.json.JsonFormatterView
+import eu.zeletrik.devcore.tools.jsondiff.JsonDiffView
 import eu.zeletrik.devcore.tools.jsonpath.JsonPathView
 import eu.zeletrik.devcore.tools.jwt.JwtView
 import eu.zeletrik.devcore.tools.keys.KeyPairView
@@ -133,6 +135,14 @@ enum class Tool(
 		listOf("bytes", "kb", "mb", "gb", "kib", "mib", "bits", "size"),
 		DataSizeView::class.java,
 	),
+	DOCKER_COMPOSE(
+		"Docker Compose Converter",
+		"Convert docker run commands to a Compose file and back",
+		Category.CONVERTERS,
+		VaadinIcon.BOAT,
+		listOf("docker", "compose", "docker-compose", "run", "container", "service", "yaml"),
+		DockerComposeView::class.java,
+	),
 	HASH(
 		"Hash Generator",
 		"Compute MD5, SHA-1 and SHA-2 digests or HMACs of text",
@@ -167,6 +177,14 @@ enum class Tool(
 		VaadinIcon.FILTER,
 		listOf("jsonpath", "json", "query", "filter", "path", "select"),
 		JsonPathView::class.java,
+	),
+	JSON_DIFF(
+		"JSON Diff",
+		"Compare two JSON documents and list what changed by path, ignoring key order",
+		Category.DATA,
+		VaadinIcon.SPLIT_H,
+		listOf("json", "diff", "compare", "changes", "delta", "difference", "semantic", "structural"),
+		JsonDiffView::class.java,
 	),
 	JWT(
 		"JWT Decoder/Encoder",

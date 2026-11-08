@@ -145,7 +145,7 @@ jobs:
             type=semver,pattern={{version}},value=${{ needs.release.outputs.version }}
             type=raw,value=latest
           labels: |
-            org.opencontainers.image.description=Self-hosted developer toolbox: 40 tools for JSON, encoding, JWT, hashes, time, networks and more.
+            org.opencontainers.image.description=Self-hosted developer toolbox: 42 tools for JSON, encoding, JWT, hashes, time, networks and more.
 
       # The Dockerfile's only RUN step runs on the build platform (it splits the jar into layers), so the arm64 image
       # needs no QEMU.

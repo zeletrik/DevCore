@@ -19,6 +19,8 @@ import eu.zeletrik.devcore.tools.hash.HashGeneratorView
 import eu.zeletrik.devcore.tools.hashing.PasswordHashes
 import eu.zeletrik.devcore.tools.hashing.PasswordHashingView
 import eu.zeletrik.devcore.tools.htmlentities.HtmlEntitiesView
+import eu.zeletrik.devcore.tools.jsondiff.JsonDiffView
+import eu.zeletrik.devcore.tools.jsondiff.Numbers
 import eu.zeletrik.devcore.tools.jsonpath.JsonPathView
 import eu.zeletrik.devcore.tools.jwt.JwtView
 import eu.zeletrik.devcore.tools.keys.KeyAlgorithm
@@ -97,6 +99,7 @@ class ToolsSmokeTest : SpringBrowserlessTest() {
 		"basic-auth" to listOf("encode", "decode"),
 		"jwt" to listOf("decode", "encode"),
 		"password-hashing" to listOf("hash", "verify"),
+		"docker-compose-converter" to listOf("to-compose", "to-run"),
 	)
 
 	private val jwtIo = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
@@ -118,7 +121,7 @@ class ToolsSmokeTest : SpringBrowserlessTest() {
 
 	private fun Component.modeName(): String {
 		val group = this::class.memberProperties.first { it.name == "mode" }.getter.call(this) as RadioButtonGroup<*>
-		return (group.value as Enum<*>).name.lowercase()
+		return (group.value as Enum<*>).name.lowercase().replace('_', '-')
 	}
 
 	@Test
@@ -238,6 +241,23 @@ class ToolsSmokeTest : SpringBrowserlessTest() {
 		view.input.value = "  \n\t "
 		assertFalse(view.input.isInvalid)
 		assertEquals("", view.output.value)
+	}
+
+	@Test
+	fun `json diff - each side is checked as soon as it has text, the differences need both`() {
+		val view = navigate(JsonDiffView::class.java)
+		test(view.changed).setValue("[1")
+		assertTrue(view.changed.isInvalid)
+		assertFalse(view.input.isInvalid)
+		test(view.changed).setValue("[1.0, 2]")
+		assertFalse(view.changed.isInvalid)
+		assertEquals("" to "", view.status.text to view.output.value)
+		test(view.input).setValue("[1]")
+		assertEquals("1 difference: 1 added" to "+ $[1]: 2", view.status.text to view.output.value)
+		test(view.numbers).selectItem(Numbers.AS_WRITTEN.label)
+		assertEquals("2 differences: 1 added, 1 changed", view.status.text)
+		test(view.input).setValue("")
+		assertEquals("" to "", view.status.text to view.output.value)
 	}
 
 	@Test

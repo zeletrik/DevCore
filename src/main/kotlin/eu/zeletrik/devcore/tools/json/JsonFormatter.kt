@@ -118,7 +118,7 @@ object JsonFormatter {
 		null
 	}
 
-	private fun invalid(at: TokenStreamLocation?, reason: String, cause: Throwable? = null): IllegalArgumentException {
+	internal fun invalid(at: TokenStreamLocation?, reason: String, cause: Throwable? = null): IllegalArgumentException {
 		val where = at?.let { " at line ${it.lineNr}, column ${it.columnNr}" }.orEmpty()
 		return IllegalArgumentException("Invalid JSON$where: $reason", cause)
 	}
@@ -142,7 +142,7 @@ object JsonFormatter {
 }
 
 /** Strings with an unpaired surrogate, which can only be written as JSON with that surrogate escaped. */
-private object LoneSurrogates {
+internal object LoneSurrogates {
 	fun hasLoneSurrogate(text: String) = text.indices.any { isLone(text, it) }
 
 	private fun isLone(text: String, i: Int) = when {

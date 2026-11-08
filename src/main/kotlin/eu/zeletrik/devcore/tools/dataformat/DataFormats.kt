@@ -19,6 +19,7 @@ import tools.jackson.dataformat.toml.TomlMapper
 import tools.jackson.dataformat.yaml.YAMLFactory
 import tools.jackson.dataformat.yaml.YAMLMapper
 import tools.jackson.dataformat.yaml.YAMLParser
+import tools.jackson.dataformat.yaml.YAMLReadFeature
 import tools.jackson.dataformat.yaml.YAMLWriteFeature
 import tools.jackson.dataformat.yaml.util.StringQuotingChecker
 import java.util.Base64
@@ -30,7 +31,13 @@ enum class Format(val label: String) { JSON("JSON"), YAML("YAML"), TOML("TOML"),
 object DataFormats {
 	private val nodes = JsonNodeFactory.instance
 	private val json = JsonMapper()
-	private val yaml = YAMLMapper.builder(YAMLFactory.builder().stringQuotingChecker(YamlLookalikes).build())
+	// A key without a value is null, as YAML defines it; the builder turns that off, unlike a plain YAMLMapper().
+	private val yaml = YAMLMapper.builder(
+		YAMLFactory.builder()
+			.stringQuotingChecker(YamlLookalikes)
+			.enable(YAMLReadFeature.EMPTY_STRING_AS_NULL)
+			.build(),
+	)
 		.disable(YAMLWriteFeature.WRITE_DOC_START_MARKER)
 		.enable(YAMLWriteFeature.MINIMIZE_QUOTES)
 		.enable(YAMLWriteFeature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS)
@@ -47,13 +54,15 @@ object DataFormats {
 		throw invalid(e)
 	}
 
-	private fun invalid(e: JacksonException) =
+	/** A parse failure as a user message, with its line and column; the Docker Compose Converter uses it too. */
+	internal fun invalid(e: JacksonException) =
 		IllegalArgumentException(
 			e.location?.let { "${e.originalMessage} (line ${it.lineNr}, column ${it.columnNr})" } ?: e.originalMessage,
 			e,
 		)
 
-	private fun read(text: String, from: Format): JsonNode? = when (from) {
+	/** [text] as one tree, or null when it holds no value; throws Jackson's exception for invalid input. */
+	internal fun read(text: String, from: Format): JsonNode? = when (from) {
 		Format.JSON -> StrictTree.read(json, text, from)
 		Format.YAML -> StrictTree.read(yaml, text, from)
 		Format.TOML -> StrictTree.read(toml, text, from)
@@ -61,7 +70,7 @@ object DataFormats {
 		Format.CSV -> csvRows(withoutTrailingBlankLines(text))
 	}
 
-	private fun write(tree: JsonNode, to: Format): String = when (to) {
+	internal fun write(tree: JsonNode, to: Format): String = when (to) {
 		Format.JSON -> JsonFormatter.format(json.writeValueAsString(tree))
 		Format.YAML -> bounded(yaml.writer(), tree)
 		Format.TOML -> {

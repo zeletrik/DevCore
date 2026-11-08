@@ -67,6 +67,8 @@ class ArchitectureTest {
 				Tool.DATA_SIZE to "data-size-converter",
 				Tool.CHMOD to "chmod-calculator",
 				Tool.COLOR to "color-converter",
+				Tool.JSON_DIFF to "json-diff",
+				Tool.DOCKER_COMPOSE to "docker-compose-converter",
 			),
 			Tool.entries.associateWith { it.id },
 		)

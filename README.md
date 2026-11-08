@@ -3,7 +3,7 @@
 [![Release](https://github.com/zeletrik/devcore/actions/workflows/release.yml/badge.svg)](https://github.com/zeletrik/devcore/actions/workflows/release.yml)
 
 A self-hosted developer toolbox: the everyday utilities you would otherwise paste into random websites, in one web app
-that runs on your own machine or server. 40 tools in eight categories, built with Kotlin, Spring Boot and Vaadin. It
+that runs on your own machine or server. 42 tools in eight categories, built with Kotlin, Spring Boot and Vaadin. It
 needs no account and no database, and makes no outbound calls.
 
 ![DevCore's Home page: the sidebar with search and tool categories, and a card for every tool](docs/images/home.png)
@@ -13,48 +13,50 @@ needs no account and no database, and makes no outbound calls.
 The **`input`** column says whether a deep link can pre-fill the tool (see [Deep links](#deep-links)). The
 **`mode`** column lists the tool's modes, default first.
 
-| Category       | Tool                                                      | Id                        | `input` | `mode`                                 |
-|----------------|-----------------------------------------------------------|---------------------------|---------|----------------------------------------|
-| Converters     | Chmod Calculator                                          | `chmod-calculator`        | yes     | —                                      |
-| Converters     | Color Converter                                           | `color-converter`         | yes     | —                                      |
-| Converters     | Data Size Converter                                       | `data-size-converter`     | yes     | —                                      |
-| Converters     | Number Base Converter                                     | `number-base-converter`   | yes     | —                                      |
-| Data & formats | Data Format Converter (JSON, YAML, TOML, properties, CSV) | `data-format-converter`   | yes     | —                                      |
-| Data & formats | JSON Formatter                                            | `json-formatter`          | yes     | —                                      |
-| Data & formats | JSONPath Tester                                           | `jsonpath-tester`         | yes     | —                                      |
-| Data & formats | Markdown to HTML                                          | `markdown-to-html`        | yes     | —                                      |
-| Data & formats | SQL Formatter                                             | `sql-formatter`           | yes     | —                                      |
-| Data & formats | XML Formatter                                             | `xml-formatter`           | yes     | —                                      |
-| Date & time    | Cron Explainer                                            | `cron-explainer`          | yes     | —                                      |
-| Date & time    | Time Zone Converter                                       | `time-zone-converter`     | yes     | —                                      |
-| Date & time    | Timestamp Converter                                       | `timestamp-converter`     | yes     | —                                      |
-| Encoding       | Base64 Encoder/Decoder                                    | `base64`                  | yes     | `encode`, `decode`                     |
-| Encoding       | HTML Entity Encoder/Decoder                               | `html-entities`           | yes     | `encode`, `decode`                     |
-| Encoding       | Morse Code                                                | `morse-code`              | yes     | `encode`, `decode`                     |
-| Encoding       | NATO Phonetic Alphabet                                    | `nato-alphabet`           | yes     | —                                      |
-| Encoding       | String Escape/Unescape                                    | `string-escape`           | yes     | `encode` (escape), `decode` (unescape) |
-| Encoding       | Unicode Escape                                            | `unicode-escape`          | yes     | `encode`, `decode`                     |
-| Encoding       | URL Encoder/Decoder                                       | `url-encoder`             | yes     | `encode`, `decode`                     |
-| Generators     | Barcode Generator                                         | `barcode-generator`       | yes     | —                                      |
-| Generators     | Lorem Ipsum                                               | `lorem-ipsum-generator`   | —       | —                                      |
-| Generators     | Password Generator                                        | `password-generator`      | —       | —                                      |
-| Generators     | QR Code Generator                                         | `qr-code-generator`       | yes     | —                                      |
-| Generators     | Random Number Generator                                   | `random-number-generator` | —       | —                                      |
-| Generators     | UUID Generator (v4, v7, ULID)                             | `uuid-generator`          | —       | —                                      |
-| Network        | Random Port Generator                                     | `random-port-generator`   | —       | —                                      |
-| Network        | Subnet Calculator                                         | `subnet-calculator`       | yes     | —                                      |
-| Network        | URL Parser                                                | `url-parser`              | yes     | —                                      |
-| Security       | Basic Auth Header                                         | `basic-auth`              | —       | `encode`, `decode`                     |
-| Security       | Certificate Decoder                                       | `certificate-decoder`     | yes     | —                                      |
-| Security       | Hash Generator (MD5, SHA-1, SHA-2, HMAC)                  | `hash-generator`          | yes     | —                                      |
-| Security       | JWT Decoder/Encoder                                       | `jwt`                     | yes     | `decode`, `encode`                     |
-| Security       | Key Pair Generator                                        | `key-pair-generator`      | —       | —                                      |
-| Security       | Password Hashing (bcrypt, Argon2id)                       | `password-hashing`        | —       | `hash`, `verify`                       |
-| Text           | Case Converter                                            | `case-converter`          | yes     | —                                      |
-| Text           | Line Tools                                                | `line-tools`              | yes     | —                                      |
-| Text           | Regex Tester (Java syntax)                                | `regex-tester`            | yes     | —                                      |
-| Text           | Text Diff                                                 | `text-diff`               | —       | —                                      |
-| Text           | Text Statistics                                           | `text-statistics`         | yes     | —                                      |
+| Category       | Tool                                                      | Id                         | `input` | `mode`                                 |
+|----------------|-----------------------------------------------------------|----------------------------|---------|----------------------------------------|
+| Converters     | Chmod Calculator                                          | `chmod-calculator`         | yes     | —                                      |
+| Converters     | Color Converter                                           | `color-converter`          | yes     | —                                      |
+| Converters     | Data Size Converter                                       | `data-size-converter`      | yes     | —                                      |
+| Converters     | Docker Compose Converter                                  | `docker-compose-converter` | —       | `to-compose`, `to-run`                 |
+| Converters     | Number Base Converter                                     | `number-base-converter`    | yes     | —                                      |
+| Data & formats | Data Format Converter (JSON, YAML, TOML, properties, CSV) | `data-format-converter`    | yes     | —                                      |
+| Data & formats | JSON Diff                                                 | `json-diff`                | —       | —                                      |
+| Data & formats | JSON Formatter                                            | `json-formatter`           | yes     | —                                      |
+| Data & formats | JSONPath Tester                                           | `jsonpath-tester`          | yes     | —                                      |
+| Data & formats | Markdown to HTML                                          | `markdown-to-html`         | yes     | —                                      |
+| Data & formats | SQL Formatter                                             | `sql-formatter`            | yes     | —                                      |
+| Data & formats | XML Formatter                                             | `xml-formatter`            | yes     | —                                      |
+| Date & time    | Cron Explainer                                            | `cron-explainer`           | yes     | —                                      |
+| Date & time    | Time Zone Converter                                       | `time-zone-converter`      | yes     | —                                      |
+| Date & time    | Timestamp Converter                                       | `timestamp-converter`      | yes     | —                                      |
+| Encoding       | Base64 Encoder/Decoder                                    | `base64`                   | yes     | `encode`, `decode`                     |
+| Encoding       | HTML Entity Encoder/Decoder                               | `html-entities`            | yes     | `encode`, `decode`                     |
+| Encoding       | Morse Code                                                | `morse-code`               | yes     | `encode`, `decode`                     |
+| Encoding       | NATO Phonetic Alphabet                                    | `nato-alphabet`            | yes     | —                                      |
+| Encoding       | String Escape/Unescape                                    | `string-escape`            | yes     | `encode` (escape), `decode` (unescape) |
+| Encoding       | Unicode Escape                                            | `unicode-escape`           | yes     | `encode`, `decode`                     |
+| Encoding       | URL Encoder/Decoder                                       | `url-encoder`              | yes     | `encode`, `decode`                     |
+| Generators     | Barcode Generator                                         | `barcode-generator`        | yes     | —                                      |
+| Generators     | Lorem Ipsum                                               | `lorem-ipsum-generator`    | —       | —                                      |
+| Generators     | Password Generator                                        | `password-generator`       | —       | —                                      |
+| Generators     | QR Code Generator                                         | `qr-code-generator`        | yes     | —                                      |
+| Generators     | Random Number Generator                                   | `random-number-generator`  | —       | —                                      |
+| Generators     | UUID Generator (v4, v7, ULID)                             | `uuid-generator`           | —       | —                                      |
+| Network        | Random Port Generator                                     | `random-port-generator`    | —       | —                                      |
+| Network        | Subnet Calculator                                         | `subnet-calculator`        | yes     | —                                      |
+| Network        | URL Parser                                                | `url-parser`               | yes     | —                                      |
+| Security       | Basic Auth Header                                         | `basic-auth`               | —       | `encode`, `decode`                     |
+| Security       | Certificate Decoder                                       | `certificate-decoder`      | yes     | —                                      |
+| Security       | Hash Generator (MD5, SHA-1, SHA-2, HMAC)                  | `hash-generator`           | yes     | —                                      |
+| Security       | JWT Decoder/Encoder                                       | `jwt`                      | yes     | `decode`, `encode`                     |
+| Security       | Key Pair Generator                                        | `key-pair-generator`       | —       | —                                      |
+| Security       | Password Hashing (bcrypt, Argon2id)                       | `password-hashing`         | —       | `hash`, `verify`                       |
+| Text           | Case Converter                                            | `case-converter`           | yes     | —                                      |
+| Text           | Line Tools                                                | `line-tools`               | yes     | —                                      |
+| Text           | Regex Tester (Java syntax)                                | `regex-tester`             | yes     | —                                      |
+| Text           | Text Diff                                                 | `text-diff`                | —       | —                                      |
+| Text           | Text Statistics                                           | `text-statistics`          | yes     | —                                      |
 
 ## Run it
 

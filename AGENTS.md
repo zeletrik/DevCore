@@ -13,14 +13,6 @@ the tests enforce most of what follows.
 | `./gradlew test --tests '*Base64CodecTest'` | One test class.                                                   |
 | `./gradlew bootRun`                         | Starts DevCore at <http://localhost:8080>.                        |
 | `./gradlew -t classes`                      | In a second terminal next to `bootRun`: reloads on every change.  |
-## Commands
-
-| Command                                     | What it does                                                      |
-|---------------------------------------------|-------------------------------------------------------------------|
-| `./gradlew test detekt`                     | What CI runs. It must pass before a change is done.               |
-| `./gradlew test --tests '*Base64CodecTest'` | One test class.                                                   |
-| `./gradlew bootRun`                         | Starts DevCore at <http://localhost:8080>.                        |
-| `./gradlew -t classes`                      | In a second terminal next to `bootRun`: reloads on every change.  |
 
 Gradle uses the JDK 25 on `JAVA_HOME` and doesn't download one. The build needs no Node.js. If something already listens
 on port 8080, leave it running and start yours elsewhere: `SERVER_PORT=18080 ./gradlew bootRun`.

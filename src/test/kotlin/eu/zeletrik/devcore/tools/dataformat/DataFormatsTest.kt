@@ -26,6 +26,14 @@ class DataFormatsTest {
 	}
 
 	@Test
+	fun `a YAML key without a value is null, and quoted empty text stays text`() {
+		assertEquals("{\n  \"a\": null,\n  \"b\": \"\"\n}", convert("a:\nb: ''", Format.YAML, Format.JSON))
+		assertEquals("TOML has no null value (at 'a')", assertFailsWith<IllegalArgumentException> {
+			convert("a:", Format.YAML, Format.TOML)
+		}.message)
+	}
+
+	@Test
 	fun `numbers keep every digit, whatever the source format`() {
 		val yaml = convert(
 			"""{"n":12345678901234567890,"d":0.1000000000000000055511151231257827}""",

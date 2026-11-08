@@ -5,7 +5,7 @@ package eu.zeletrik.devcore.shell
  */
 object Project {
 	const val DESCRIPTION =
-		"Self-hosted developer toolbox: 40 tools for JSON, encoding, JWT, hashes, time, networks and more."
+		"Self-hosted developer toolbox: 42 tools for JSON, encoding, JWT, hashes, time, networks and more."
 	const val INTRO =
 		"Developer tools that run on this server. Your input is processed here and is never stored or logged."
 
