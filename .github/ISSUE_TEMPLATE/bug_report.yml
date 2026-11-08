@@ -1,0 +1,58 @@
+name: Bug report
+description: Something in DevCore doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security problem? Don't open an issue: report it privately as `SECURITY.md` describes.
+        Don't paste real secrets, tokens or private data into this form.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown in DevCore's header and on its About page.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: How do you run DevCore?
+      options:
+        - Docker image
+        - Docker Compose
+        - java -jar
+        - From source (Gradle)
+    validations:
+      required: true
+  - type: input
+    id: tool
+    attributes:
+      label: Tool
+      description: The tool's id from its URL, if the bug is in one tool.
+      placeholder: json-formatter
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the input that triggers the bug, if it holds nothing private. A deep link works too.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Browser and proxy
+      description: The browser and its version, and the reverse proxy in front of DevCore, if any.

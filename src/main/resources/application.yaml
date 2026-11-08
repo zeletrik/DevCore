@@ -1,0 +1,32 @@
+vaadin:
+  launch-browser: true
+  # Vaadin answers every unknown path with its 200 bootstrap page; let Spring 404 the actuator paths instead.
+  exclude-urls: /actuator/**
+  # Vaadin adds X-Frame-Options: SAMEORIGIN by default; an empty value turns it off so same-site dashboards can embed tools.
+  frameOptions: ""
+spring:
+  application:
+    name: DevCore
+  threads:
+    # Request threads block on deep tool work (see DeepWork); virtual threads make that waiting cheap.
+    virtual:
+      enabled: true
+server:
+  # Honor X-Forwarded-* from a reverse proxy, including X-Forwarded-Prefix for path-stripping setups.
+  forward-headers-strategy: framework
+  tomcat:
+    # A deep link pasted with raw JSON or brackets would otherwise get a bare 400, and the full link, input included,
+    # would land in the log.
+    relaxed-query-chars: ['{', '}', '[', ']', '|', '^', '`', '<', '>', '"', '\']
+management:
+  endpoints:
+    web:
+      # Health only, for container healthchecks; nothing else is reachable and the index is off.
+      exposure:
+        include: health
+      discovery:
+        enabled: false
+devcore:
+  # The header and About link here; About adds GitHub's /releases and /security/policy pages to it.
+  repository:
+    url: https://github.com/zeletrik/devcore
