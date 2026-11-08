@@ -2,7 +2,7 @@
 kotlin = "2.4.21"
 spring-boot = "4.1.2"
 spring-dependency-management = "1.1.7"
-vaadin = "25.3.4"
+vaadin = "25.3.5"
 detekt = "2.0.0-alpha.6"
 license-report = "3.1.5"
 # NOTE: pinned because Jackson 3.1.x truncates 19-digit TOML integers; drop the pin once Spring Boot manages 3.2.4+.
