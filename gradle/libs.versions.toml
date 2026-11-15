@@ -6,7 +6,7 @@ vaadin = "25.3.4"
 detekt = "2.0.0-alpha.6"
 license-report = "3.1.5"
 # NOTE: pinned because Jackson 3.1.x truncates 19-digit TOML integers; drop the pin once Spring Boot manages 3.2.4+.
-jackson-toml = "3.2.4"
+jackson-toml = "3.3.0"
 java-diff-utils = "4.18"
 sql-formatter = "2.0.5"
 json-path = "3.0.0"
