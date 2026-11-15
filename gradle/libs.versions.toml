@@ -12,7 +12,7 @@ sql-formatter = "2.0.5"
 json-path = "3.0.0"
 commonmark = "0.32.0"
 jsoup = "1.23.2"
-bouncycastle = "1.86"
+bouncycastle = "1.87"
 zxing = "3.5.4"
 
 # Libraries without a version are managed by the Spring Boot and Vaadin BOMs.
