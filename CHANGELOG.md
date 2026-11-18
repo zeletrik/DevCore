@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/zeletrik/DevCore/compare/v1.0.0...v1.0.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* turn off the JDK's Base64 intrinsic in the image against Java4Shell ([75367b0](https://github.com/zeletrik/DevCore/commit/75367b0d751717cfa530fb7b1a388e52aac732a1))
+
 # 1.0.0 (2026-11-08)
 
 
