@@ -46,7 +46,7 @@ class RepositoryFilesTest {
 		assertTrue("--interval=30s --timeout=5s --start-period=30s --retries=3" in healthcheck, healthcheck)
 		assertTrue("/dev/tcp/127.0.0.1/\${SERVER_PORT:-8080}" in healthcheck, healthcheck)
 		assertTrue("\$SERVER_SERVLET_CONTEXT_PATH" in healthcheck && "/actuator/health" in healthcheck, healthcheck)
-		assertEquals("ENTRYPOINT [\"java\", \"-jar\", \"devcore.jar\"]", lines.last())
+		assertEquals("ENTRYPOINT [\"java\", \"-XX:-UseBASE64Intrinsics\", \"-jar\", \"devcore.jar\"]", lines.last())
 	}
 
 	@Test
